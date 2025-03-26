@@ -553,7 +553,10 @@ def create_state_client(app: flask.Flask):
         ):
             emails.add(user.email)
             for attendance in user.attendances:
-                section_name = attendance.session.section.name
+                try:
+                    section_name = attendance.session.section.name
+                except AttributeError:
+                    section_name = "Session not associated with a section"
                 if section_name not in attendances:
                     attendances[section_name] = {}
                 if user.email not in attendances[section_name]:

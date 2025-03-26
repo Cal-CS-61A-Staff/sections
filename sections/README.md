@@ -26,17 +26,23 @@ To authenticate locally, click `Sign in with OKPy`. You will be directed to some
 `localhost:8000/oauth/login`. This page will show you a link starting with `okpy.org/ouath...` that you click on. Now you can log in as normal. Once you get a redirect notice,
 access `localhost:3000/oauth/login` again.
 
-## Import Sections Locally
+## Import Test Sections Locally
 
-1. Start the server and front end
-2. Run import_locally script using your csv file. Your csv should follow the template. Examples can be found [here](server/test_csvs)
-Examples:
-If importing sections:
-`python3 import_locally.py --type sections --file path/to/your_file.csv`
-If importing enrollment:
-`python3 import_locally.py --type sections --file path/to/your_file.csv`
+1. Start the server and front end.
+2. Navigate to the `server` directory and run the following to import example sections and enrollment:
 
-3. Reload your localhost page, you should see the updated sections locally.
+```
+python3 import_locally.py --type sections --file test_csvs/test_sections.csv
+python3 import_locally.py --type enrollment --file test_csvs/disc_enrollment.csv
+python3 import_locally.py --type enrollment --file test_csvs/lab_enrollment.csv
+```
+
+3. Reload your localhost page, you should see the example sections locally.
+
+## Import Sections from GCP
+1. Download the sections database to obtain a `.sql` file. Relevant Links [1](https://cloud.google.com/sql/docs/mysql/import-export/import-export-sql) and [2](https://cloud.google.com/storage/docs/downloading-objects).
+2. Likely the export uses MySQL syntax, so update it to SQLite.
+3. In the `server` directory, delete `app.db` and run `sqlite3 app.db < gcp-sections-export.sql`.
 
 ## Notes
 1. If you run the app locally and sign in, the app assumes you have admin access. This means you may not be able to test from the student view.
