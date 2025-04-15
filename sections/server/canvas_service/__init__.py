@@ -3,8 +3,6 @@ from canvasapi import Canvas
 from canvasapi.user import User
 from canvasapi.course import Course
 
-from server import app
-from server.models import Offering
 # from server.services.canvas.fake_canvas import FakeCanvas, FakeCourse, FakeUser
 # from server.typings.exception import Redirect
 
