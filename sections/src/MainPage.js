@@ -58,7 +58,7 @@ export default function MainPage(): React.Node {
               <Col>
                 <FlexLayout>
                   <Button block variant="warning" size="lg" href="/oauth/canvas_login">
-                    Sign in with OKPy
+                    Sign in
                   </Button>
                 </FlexLayout>
               </Col>
