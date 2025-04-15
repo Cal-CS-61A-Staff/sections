@@ -6,4 +6,5 @@ flask-debugtoolbar==0.11.0
 pytz==2020.1
 jinja2==3.0.0
 canvasapi==3.2.0
+python-dotenv
 -r common/requirements.txt
