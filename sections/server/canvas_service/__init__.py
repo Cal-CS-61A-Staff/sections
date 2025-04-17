@@ -40,10 +40,9 @@ def is_staff(course, user_id):
     Returns:
         bool: True if user has staff role in course.
     """
-    for e in course.get_enrollments(str(user_id)):
+    for e in course.get_enrollments(user_id=str(user_id)):
         staff_types = ["TaEnrollment", "TeacherEnrollment"]
-        print("Type = ", e["type"])
-        if e["type"] in staff_types:
+        if e.type in staff_types:
             print("Is staff")
             return True
     return False
