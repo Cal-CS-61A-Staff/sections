@@ -29,3 +29,21 @@ def get_name(user_id, key=None) -> str | None:
 
 def get_user_courses(user_id, key=None) -> list[Course]:
     return [c for c in get_user(user_id).get_courses(enrollment_status='active', include=['term'], per_page=100)]
+
+def is_staff(course, user_id):
+    """ Returns whether a user is a TA or Teacher of the given course.
+
+    Args:
+        course (Course): CanvasAPI course object
+        user_id (str | int): Canvas id for the user
+
+    Returns:
+        bool: True if user has staff role in course.
+    """
+    for e in course.get_enrollments(str(user_id)):
+        staff_types = ["TaEnrollment", "TeacherEnrollment"]
+        print("Type = ", e["type"])
+        if e["type"] in staff_types:
+            print("Is staff")
+            return True
+    return False
