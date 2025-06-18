@@ -49,7 +49,7 @@ function sentenceList(items: Array<React.MixedElement>, isStaff: ?boolean) {
   }
 }
 
-//help
+// help
 export default function EnrolledSectionCard({ section }: Props) {
   const state = useContext(StateContext);
   const isStaff = state.currentUser?.isStaff;

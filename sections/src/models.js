@@ -147,7 +147,7 @@ export function sectionInterval(section: Section): React.MixedElement {
     .split("; ")
     .find((row) => row.startsWith("useLocal="));
   const useLocal =
-    useLocalString && useLocalString.split("=")[1] === "true" ? true : false;
+    useLocalString && useLocalString.split("=")[1] === "true";
 
   const tz = useLocal ? moment.tz.guess() : TZ;
 

@@ -66,7 +66,7 @@ export default function LabPage(): React.Node {
     return 0;
   });
 
-  //useLocal cookie helpers
+  // useLocal cookie helpers
   function getUseLocalCookieValue(): boolean {
     // check existence of the cookie
     if (
@@ -88,7 +88,7 @@ export default function LabPage(): React.Node {
 
   function setUseLocalCookieValue(toSet) {
     const toSetString = toSet === true ? "true" : "false";
-    document.cookie = "useLocal=" + toSetString + "; SameSite=lax; Secure";
+    document.cookie = `useLocal=${toSetString}; SameSite=lax; Secure`;
   }
 
   const toggleUseLocalDefault = getUseLocalCookieValue();
@@ -129,10 +129,10 @@ export default function LabPage(): React.Node {
             ) : null}
           </Row>
           {labSections.length === 0 ? (
-              <ReactMarkdown>{"Course staff has not yet set up lab sections."}</ReactMarkdown>
+              <ReactMarkdown>Course staff has not yet set up lab sections.</ReactMarkdown>
             ) : null}
           {state.currentUser?.isStaff ? (
-            //need to filter just by lab
+            // need to filter just by lab
             state.taughtSections
             .filter((section) => section.name === "Lab")
             .map((section, i) => (
@@ -160,7 +160,7 @@ export default function LabPage(): React.Node {
           />
         ) : null}
         {sortedIntervals.map((interval, i) => (
-           //need to filter just by lab
+           // need to filter just by lab
           <Row key={i}>
             <Col>
               <SectionCardGroup

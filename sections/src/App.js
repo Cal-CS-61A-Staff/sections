@@ -105,21 +105,15 @@ export default function App(): React.Node {
                 Study Groups
               </Nav.Link>
             )} */}
-            {
-              <Link to="/lab" className="nav-link active">
+            <Link to="/lab" className="nav-link active">
               Lab
             </Link>
-            }
-            {
-              <Link to="/disc" className="nav-link active">
+            <Link to="/disc" className="nav-link active">
               Discussion
             </Link>
-            }
-            {
-              <Link to="/tutoring" className="nav-link active">
+            <Link to="/tutoring" className="nav-link active">
               Tutoring
             </Link>
-            }
             {state.currentUser?.isAdmin === true && 
             (
               <Link to="/admin" className="nav-link active">

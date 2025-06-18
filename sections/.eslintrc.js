@@ -7,7 +7,7 @@ module.exports = {
     "plugin:flowtype/recommended",
   ],
   plugins: ["flowtype"],
-  parser: "babel-eslint",
+  parser: "@babel/eslint-parser",
   parserOptions: {
     sourceType: "module",
   },
@@ -48,6 +48,7 @@ module.exports = {
     "no-nested-ternary": "off",
     "no-plusplus": "off",
     "react/destructuring-assignment": 0,
+    "react/jsx-no-bind": 1,
     "react/require-default-props": 0,
     "react/forbid-prop-types": 0,
     "import/prefer-default-export": 1,

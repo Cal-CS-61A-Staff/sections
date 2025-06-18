@@ -115,13 +115,11 @@ export default function StudentSectionCard({
             {section.capacity} spaces left
           </Card.Subtitle>
           <Card.Text>{section.description}</Card.Text>
-          {
-            <SectionCard key={section.id} section={section} />
-          }
+          <SectionCard key={section.id} section={section} />
         </Card.Body>
         {hasSpace &&
         !isStaff &&
-        //checks if student is enrolled in that particular section
+        // checks if student is enrolled in that particular section
         (enrolledSections != null && enrolledSections.length > 0 && enrolledSections.some(s => s.name === section.name) ? config[`canStudentsChange${section.name}`] : config[`canStudentsJoin${section.name}`]) && 
         section.canSelfEnroll ? (
           <ListGroup variant="flush">

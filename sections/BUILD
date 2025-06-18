@@ -19,6 +19,6 @@ build_types.declare_react_app(
     deps=[":common"],
     include=[":sections_common_js"],
     checks=[
-        check_types.yarn(prettier=True, eslint=True, flow=True),
+        check_types.yarn(prettier=True, eslint=True, flow=True)
     ],
 )

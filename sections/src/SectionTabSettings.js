@@ -24,34 +24,6 @@ export default function SectionTabSettings({ section }: Props) {
   const changeTagsAPI = useSectionAPI("update_section_tags");
   const changeTimeAPI = useSectionAPI("update_section_time");
 
-  const handleSubmit = () => {
-    if (formData["location"] !== section.location) {
-      changeLocationAPI({
-        section_id: section.id,
-        new_location: formData["location"]
-      });
-    };
-
-    if (formData["day"] !== getSectionDay(section)
-      || formData["startTime"] !== getSectionStartTime(section)
-      || formData["endTime"] !== getSectionEndTime(section)
-    ) {
-      changeTimeAPI({
-        section_id: section.id,
-        day: formData["day"],
-        start_time: formData["startTime"],
-        end_time: formData["endTime"]
-      });
-    };
-
-    if (formData["tags"] !== section.tags.toString()) {
-      changeTagsAPI({
-        section_id: section.id,
-        tags: formData["tags"]
-      });
-    };
-  };
-
   type SettingsKey =
   | "location"
   | "day"
@@ -82,6 +54,34 @@ export default function SectionTabSettings({ section }: Props) {
     endTime: getSectionEndTime(section),
     tags: section.tags.toString()
   });
+
+  const handleSubmit = () => {
+    if (formData.location !== section.location) {
+      changeLocationAPI({
+        section_id: section.id,
+        new_location: formData.location
+      });
+    };
+
+    if (formData.day !== getSectionDay(section)
+      || formData.startTime !== getSectionStartTime(section)
+      || formData.endTime !== getSectionEndTime(section)
+    ) {
+      changeTimeAPI({
+        section_id: section.id,
+        day: formData.day,
+        start_time: formData.startTime,
+        end_time: formData.endTime
+      });
+    };
+
+    if (formData.tags !== section.tags.toString()) {
+      changeTagsAPI({
+        section_id: section.id,
+        tags: formData.tags
+      });
+    };
+  };
 
   const handleChange = (key: SettingsKey, value: string) => {
     setFormData(prev => {
