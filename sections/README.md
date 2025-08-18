@@ -22,9 +22,9 @@
 
 ## Authentication
 
-To authenticate locally, click `Sign in with OKPy`. You will be directed to something like `localhost:3000/oauth/login`. Change the link to use port 8000:
-`localhost:8000/oauth/login`. This page will show you a link starting with `okpy.org/ouath...` that you click on. Now you can log in as normal. Once you get a redirect notice,
-access `localhost:3000/oauth/login` again.
+To authenticate locally, click `Sign in`. You will be directed to something like `localhost:3000/oauth/canvas_login`. Change the link to use port 8000:
+`localhost:8000/oauth/canvas_login`. Follow the link to authenticate with canvas. Now you can log in as normal. Once you get a redirect notice,
+access `localhost:3000`. A jinja2 template not found exception is expected.
 
 ## Import Test Sections Locally
 

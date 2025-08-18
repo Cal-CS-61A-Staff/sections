@@ -10,7 +10,6 @@ export type Person = {
   id: ID,
   name: string,
   email: string,
-  backupURL: string,
   isStaff: boolean,
 };
 

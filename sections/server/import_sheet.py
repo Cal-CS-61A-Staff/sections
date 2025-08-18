@@ -102,6 +102,7 @@ def import_sections(data: Iterator):
             email=email,
             name=name,
             is_staff=True,
+            is_admin=False,
             course=get_course(),
         )
 
@@ -162,6 +163,7 @@ def import_enrollment(data: Iterator):
             email=student_email,
             name=student_email,
             is_staff=False,
+            is_admin=False,
             course=get_course()
         )
 

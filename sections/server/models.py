@@ -8,7 +8,7 @@ from flask_login import UserMixin, current_user
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import joinedload
 
-from common.course_config import get_course_id, is_admin
+from common.course_config import get_course_id
 from common.db import database_url
 
 
@@ -105,7 +105,7 @@ class Session(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     course: str = db.Column(db.String(255), index=True)
     start_time: int = db.Column(db.Integer)
-    section_id: int = db.Column(db.Integer, db.ForeignKey("section.id"), index=True) 
+    section_id: int = db.Column(db.Integer, db.ForeignKey("section.id"), index=True)
     section: Section = db.relationship("Section", backref=db.backref("sessions"), lazy="joined")
     attendances: List["Attendance"]
 
@@ -166,15 +166,16 @@ class Attendance(db.Model):
 
 class User(db.Model, UserMixin):
     # just here to make PyCharm stop complaining
-    def __init__(self, email: str, name: str, is_staff: bool, course: str):
+    def __init__(self, email: str, name: str, is_staff: bool, course: str, is_admin: bool):
         # noinspection PyArgumentList
-        super().__init__(email=email, name=name, is_staff=is_staff, course=course)
+        super().__init__(email=email, name=name, is_staff=is_staff, course=course, is_admin=is_admin)
 
     id: int = db.Column(db.Integer, primary_key=True)
     course: str = db.Column(db.String(255), index=True)
     email: str = db.Column(db.String(255), index=True)
     name: str = db.Column(db.String(255))
     is_staff: bool = db.Column(db.Boolean)
+    is_admin: bool = db.Column(db.Boolean)
 
     sections: List["Section"] = db.relationship(
         'Section', secondary=user_section, back_populates='students', lazy='joined'
@@ -195,7 +196,7 @@ class User(db.Model, UserMixin):
                 "name": self.name,
                 "email": self.email,
                 "isStaff": self.is_staff,
-                "backupURL": f"https://okpy.org/admin/course/{get_course_id()}/{quote(self.email)}",
+                "isAdmin": self.is_admin,
             }
         else:
             return {
@@ -203,7 +204,7 @@ class User(db.Model, UserMixin):
                 "name": "Anon Student",
                 "email": "",
                 "isStaff": False,
-                "backupURL": "",
+                "isAdmin": False,
             }
 
     @property
@@ -219,7 +220,7 @@ class User(db.Model, UserMixin):
         )
         return {
             **self.json,
-            "isAdmin": is_admin(self.email),
+            "isAdmin": self.is_admin,
             "attendanceHistory": [
                 attendance.full_json
                 for attendance in sorted(
@@ -251,7 +252,7 @@ class CourseConfig(db.Model):
     @property
     def json(self):
         return {
-            "canStudentsJoinLab": self.can_students_join_lab, 
+            "canStudentsJoinLab": self.can_students_join_lab,
             "canStudentsChangeLab": self.can_students_change_lab,
             "canTutorsChangeLab": self.can_tutors_change_lab,
             "canTutorsReassignLab": self.can_tutors_reassign_lab,

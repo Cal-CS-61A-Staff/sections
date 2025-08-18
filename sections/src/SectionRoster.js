@@ -95,14 +95,15 @@ export default function SectionRoster({ section }: Props) {
                 <Card.Text>
                   <a href={`mailto:${student.email}`}>{student.email}</a>
                 </Card.Text>
-                <Button
+                {/* <Button
                   href={student.backupURL}
                   target="_blank"
                   variant="outline-dark"
                   size="sm"
                 >
                   View Backups
-                </Button>{" "}
+                </Button> */}
+                {" "}
                 <Button
                   variant="danger"
                   size="sm"

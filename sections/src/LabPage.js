@@ -121,8 +121,8 @@ export default function LabPage(): React.Node {
             {state.currentUser == null ? (
               <Col>
                 <FlexLayout>
-                  <Button block variant="warning" size="lg" href="/oauth/login">
-                    Sign in with OKPy
+                  <Button block variant="warning" size="lg" href="/oauth/canvas_login">
+                    Sign in
                   </Button>
                 </FlexLayout>
               </Col>

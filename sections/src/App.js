@@ -96,15 +96,6 @@ export default function App(): React.Node {
                 Staff
               </Nav.Link>
             )}
-            {/* {is61A && (
-              <Nav.Link
-                href="https://oh.cs61a.org/party"
-                target="_blank"
-                active
-              >
-                Study Groups
-              </Nav.Link>
-            )} */}
             <Link to="/lab" className="nav-link active">
               Lab
             </Link>
@@ -114,7 +105,7 @@ export default function App(): React.Node {
             <Link to="/tutoring" className="nav-link active">
               Tutoring
             </Link>
-            {state.currentUser?.isAdmin === true && 
+            {state.currentUser?.isAdmin === true &&
             (
               <Link to="/admin" className="nav-link active">
                 Admin

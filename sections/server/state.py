@@ -52,7 +52,7 @@ def admin_required(func):
     @wraps(func)
     @staff_required
     def wrapped(**kwargs):
-        if not is_admin(current_user.email):
+        if not current_user.is_admin:
             raise Failure("Only course admins can perform this action.")
         return func(**kwargs)
 
