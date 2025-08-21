@@ -55,7 +55,6 @@ def is_admin(course, user_id):
         bool: True if user has admin role in course.
     """
     for e in course.get_enrollments(user_id=str(user_id)):
-        staff_types = ["TeacherEnrollment"]
-        if e.type in staff_types:
+        if e.type == "TeacherEnrollment" or e.role == "LeadTa":
             return True
     return False
