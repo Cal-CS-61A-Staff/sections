@@ -45,7 +45,7 @@ def is_staff(course, user_id):
     return False
 
 def is_admin(course, user_id):
-    """ Returns whether a user is a Teacher of the given course.
+    """ Returns whether a user is a Teacher or Lead TA of the given course.
 
     Args:
         course (Course): CanvasAPI course object
@@ -55,6 +55,6 @@ def is_admin(course, user_id):
         bool: True if user has admin role in course.
     """
     for e in course.get_enrollments(user_id=str(user_id)):
-        if e.type == "TeacherEnrollment" or e.role == "LeadTa":
+        if e.type == "TeacherEnrollment" or e.role == "Lead TA":
             return True
     return False
