@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-import pytz
+from zoneinfo import ZoneInfo
 
 sys.path.append(os.path.abspath("server"))
 
@@ -26,18 +26,17 @@ def parse_time_string(day, time):
     day_offset = ["M", "T", "W", "Th", "F"].index(day)
     hour_offset = 12 if hour != 12 and ampm == "p" else 0
 
-    return pst.localize(
-        datetime(
-            year=2021,
-            month=8,
-            day=23 + day_offset,
-            hour=hour + hour_offset,
-            minute=min,
-        )
+    return datetime(
+        year=2021,
+        month=8,
+        day=23 + day_offset,
+        hour=hour + hour_offset,
+        minute=min,
+        tzinfo=pst
     ).timestamp()
 
 
-pst = pytz.timezone("US/Pacific")
+pst = ZoneInfo("US/Pacific")
 
 lookup = {}
 

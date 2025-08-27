@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import wraps
 from json import dumps
 from typing import List, Optional, Union
-import pytz
+from zoneinfo import ZoneInfo
 from import_sheet import parse_time_string
 
 import flask

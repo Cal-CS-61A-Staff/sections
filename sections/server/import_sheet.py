@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Iterator
 
-import pytz
+from zoneinfo import ZoneInfo
 
 from common.course_config import get_course
 from common.rpc.auth import read_spreadsheet
@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field, fields
 from models import Failure, Section, User, db, user_section
 
 # Sample Spreadsheet Link: https://docs.google.com/spreadsheets/d/1WL7gXiBxPe6aUFBKfEOVS6iY27ITy9mARupLoJX-ouE/edit?usp=sharing
-pst = pytz.timezone("US/Pacific")
+pst = ZoneInfo("US/Pacific")
 
 
 def parse_time_string(day, time):
@@ -20,14 +20,13 @@ def parse_time_string(day, time):
     day_offset = ["M", "T", "W", "Th", "F"].index(day)
     hour_offset = 12 if hour != 12 and ampm == "p" else 0
 
-    return pst.localize(
-        datetime(
-            year=2021,
-            month=8,
-            day=23 + day_offset,
-            hour=hour + hour_offset,
-            minute=min,
-        )
+    return datetime(
+        year=2021,
+        month=8,
+        day=23 + day_offset,
+        hour=hour + hour_offset,
+        minute=min,
+        tzinfo=pst
     ).timestamp()
 
 

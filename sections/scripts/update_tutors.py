@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-import pytz
+from zoneinfo import ZoneInfo
 
 sys.path.append(os.path.abspath("../server"))
 
@@ -19,11 +19,9 @@ reader = read_spreadsheet(
     sheet_name=f"'{hour}:{min+5:02}'",
 )
 
-pst = pytz.timezone("US/Pacific")
+pst = ZoneInfo("US/Pacific")
 
-start_time = pst.localize(
-    datetime(year=2020, month=8, day=26, hour=hour + 12, minute=min + 5)
-)
+start_time = datetime(year=2020, month=8, day=26, hour=hour + 12, minute=min + 5, tzinfo=pst)
 end_time = start_time + timedelta(minutes=25)
 
 users = {}

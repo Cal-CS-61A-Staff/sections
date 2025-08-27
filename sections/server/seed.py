@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from os import getenv
 from random import choice
 
-import pytz
+from zoneinfo import ZoneInfo
 
 from main import app
 from models import Section, User, db, user_section
@@ -13,13 +13,11 @@ def seed():
         return
     with app.app_context():
         db.create_all()
-        pst = pytz.timezone("US/Pacific")
+        pst = ZoneInfo("US/Pacific")
         discussions, labs = [], []
         section_count = 100
         for i in range(section_count):
-            t = pst.localize(
-                datetime(year=2020, month=8, day=20, hour=i % 10, minute=0, second=0)
-            )
+            t = datetime(year=2020, month=8, day=20, hour=i % 10, minute=0, second=0, tzinfo=pst)
 
             discussion_section = Section(
                 course="cs61a",
