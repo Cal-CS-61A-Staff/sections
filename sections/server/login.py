@@ -3,6 +3,7 @@ from os import getenv
 import flask
 from flask import redirect
 from flask_login import LoginManager, login_user, logout_user
+import canvasapi
 
 from common.course_config import get_course, get_endpoint, get_bcourses_id
 from common.oauth_client import create_oauth_client, get_user, is_staff
@@ -42,20 +43,16 @@ def create_login_client(app: flask.Flask):
             db.session.add(user)
         user.name = user_name or user_email
 
-        app_course = canvas_service.get_course(app_course_id)
-        for course in user_courses:
-            if course.id == app_course_id:
-                app_course = course
-                break
-            # bCourses project to override
-            if course.id == 1549197:
-                break
-        else:
-            if getenv("ENV") == "prod":
-                return
-
-        user.is_staff = canvas_service.is_staff(app_course, user_id)
-        user.is_admin = canvas_service.is_admin(app_course, user_id)
+        try:
+            app_course = canvas_service.get_course(app_course_id)
+            user.is_staff = canvas_service.is_staff(app_course, user_id)
+            user.is_admin = canvas_service.is_admin(app_course, user_id)
+        except canvasapi.exceptions.Forbidden as e:
+            if 1549197 in [c.id for c in user_courses]:
+                user.is_staff = True
+                user.is_admin = True
+            else:
+                raise e
         db.session.commit()
         login_user(user, remember=True)
 
