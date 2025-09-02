@@ -54,7 +54,11 @@ def is_admin(course, user_id):
     Returns:
         bool: True if user has admin role in course.
     """
+    # admin privilege assigned if enrolled as a teacher or lead TA on bCourses
     for e in course.get_enrollments(user_id=str(user_id)):
         if e.type == "TeacherEnrollment" or e.role == "Lead TA":
             return True
+    # admin privilege assigned if enrolled in bCourses project for override purposes
+    if 1549197 in [c.id for c in get_user_courses(user_id)]:
+        return True
     return False
