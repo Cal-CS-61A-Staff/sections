@@ -47,6 +47,9 @@ def create_login_client(app: flask.Flask):
             if course.id == app_course_id:
                 app_course = course
                 break
+            # bCourses project to override
+            if course.id == 1549197:
+                break
         else:
             if getenv("ENV") == "prod":
                 return
