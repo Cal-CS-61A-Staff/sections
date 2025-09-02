@@ -508,7 +508,7 @@ def create_state_client(app: flask.Flask):
             ).one_or_none()
             if student is None:
                 student = User(
-                    email=email, name=email, is_staff=False, course=get_course()
+                    email=email, name=email, is_staff=False, is_admin=False, course=get_course()
                 )
             add_student_helper(student, section)
         db.session.commit()
