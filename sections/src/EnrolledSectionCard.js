@@ -135,7 +135,7 @@ export default function EnrolledSectionCard({ section }: Props) {
         <p>
           {isStaff ? (
             <Link to={`/section/${section.id}`}>
-              <Button variant="success">Enter Section</Button>
+              <Button variant="success">View Details</Button>
             </Link>
           ) : (
             <SectionJoinCallButtons section={section} />
