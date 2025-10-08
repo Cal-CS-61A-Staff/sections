@@ -1,5 +1,5 @@
 server/gcp-sections-export.sql
-.venv/
 venv/
 server/common
 src/common
+.env

@@ -21,6 +21,8 @@
 
 ## Authentication
 
+If this is your first time developing the sections tool, you will need to ask for the environment variables not in this git repo-- CANVAS_SERVER_URL, CANVAS_CLIENT_ID, CANVAS_CLIENT_SECRET. These are used by Oauth to authenticate you into the canvas sandbox so you can develop. Place these into an `.env` file, with ENV=DEV on the first line. Make sure to add the `.env` file to your `.gitignore`. If the below steps do not work, you will also need to ask to be added as an Admin to the canvas sandbox. Then, follow the instructions below.
+
 To authenticate locally, click `Sign in`. You will be directed to something like `localhost:3000/oauth/canvas_login`. Change the link to use port 8000:
 `localhost:8000/oauth/canvas_login`. Follow the link to authenticate with canvas. Now you can log in as normal. Once you get a redirect notice,
 access `localhost:3000`. A jinja2 template not found exception is expected when you're accessing the server (port 8000) after authentication has completed.
@@ -44,5 +46,10 @@ python3 import_locally.py --type enrollment --file test_csvs/lab_enrollment.csv
 3. In the `server` directory, delete `app.db` and run `sqlite3 app.db < gcp-sections-export.sql`.
 
 ## Notes
-1. If you run the app locally and sign in, you may need to update the local database to give yourself appropriate access levels to test the admin, staff, and student views.
-2. Use `yarn run flow` for typechecking.
+1. Use `yarn run flow` for typechecking.
+1. If you run the app locally and sign in, you may need to update the local database to give yourself appropriate access levels to test the admin, staff, and student views. To update your user, open `server/app.db` with `sqlite3`. To assign yourself staff and admin access run the following query with your email:
+```
+UPDATE user
+SET is_staff = 1, is_admin = 1
+WHERE email = 'example@berkeley.edu';
+```

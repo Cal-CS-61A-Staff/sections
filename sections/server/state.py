@@ -586,21 +586,48 @@ def create_state_client(app: flask.Flask):
     @api
     @admin_required
     def export_rosters():
-        stringify = dumps
-        rosters = dict()
-        for section in Section.query.filter_by(course=get_course()).all():
-            if section.staff:
-                rosters[section.staff.email] = rosters.get(section.staff.email, []) + [
-                    student.email for student in section.students
-                ]
-            else:
-                rosters[UNASSIGNED] = rosters.get(UNASSIGNED, []) + [
-                    student.email for student in section.students
-                ]
+        # Produce CSV based on Import Enrollment Form Style:
+        # Column titles are Student Email, Staff Email, Location, Day, Start, Type
+        out = StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["Student Email", "Staff Email", "Location", "Day", "Start", "Type"])
 
+        for section in Section.query.filter_by(course=get_course()).all():
+            staff_email = section.staff.email if section.staff else ""
+            location = section.location or ""
+            day = ""
+            start = ""
+            
+            DAY_MAP = {
+                0: "M",
+                1: "T",
+                2: "W",
+                3: "Th",
+                4: "F",
+            }
+
+            try:
+
+                if isinstance(section.start_time, (int, float)):
+                    # Interpret stored UNIX timestamps in America/LA timezones
+                    tz = ZoneInfo("America/Los_Angeles")
+                    dt = datetime.fromtimestamp(section.start_time, tz=tz)
+                    day = DAY_MAP.get(dt.weekday(), "")  # e.g. "M", "Tu"
+                    start = dt.strftime("%I:%M%p").lower().replace('m', '')  # e.g. "08:00a"
+                else:
+                    # fallback: output as-is (just as a string)
+                    start = str(section.start_time or "")
+            except Exception:
+                day = ""
+                start = str(section.start_time or "")
+
+            for student in section.students:
+                writer.writerow([student.email, staff_email, location, day, start, section.name or ""])
+
+        csv_text = out.getvalue()
         return {
             **refresh_state(),
-            "custom": {"fileName": "rosters.json", "rosters": stringify(rosters)},
+            "custom": {"fileName": "rosters.csv", "rosters": csv_text},
         }
 
     @api
