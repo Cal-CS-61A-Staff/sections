@@ -31,6 +31,7 @@ export default function SectionRoster({ section }: Props) {
   const deleteSection = useAPI("delete_section");
   const addStudents = useSectionAPI("add_students");
   const removeStudent = useSectionAPI("remove_student");
+  const refreshState = useAPI("refresh_state");
 
   const [adding, setAdding] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -111,7 +112,7 @@ export default function SectionRoster({ section }: Props) {
                     removeStudent({
                       student: student.email,
                       section_id: section.id,
-                    })
+                    }).then(() => refreshState())
                   }
                 >
                   Remove
@@ -138,7 +139,9 @@ export default function SectionRoster({ section }: Props) {
       </FlexLayout>
       <AddStudentModal
         show={adding}
-        onAdd={(emails) => addStudents({ section_id: section.id, emails })}
+        onAdd={(emails) =>
+          addStudents({ section_id: section.id, emails }).then(() => refreshState())
+        }
         onClose={() => setAdding(false)}
       />
     </>

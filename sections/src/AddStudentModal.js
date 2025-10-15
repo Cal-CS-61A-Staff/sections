@@ -11,6 +11,7 @@ type Props = {
   onAdd: (string) => Promise<void>,
   onClose: () => void,
   title?: string,
+  warningText?: string,
 };
 
 export default function AddStudentModal({
@@ -18,6 +19,7 @@ export default function AddStudentModal({
   onAdd,
   onClose,
   title = "Add Student(s)",
+  warningText = "Adding students to a new lab/discussion/tutoring section will automatically drop them from their current lab/discussion/tutoring section.",
 }: Props) {
   const [email, setEmail] = useState("");
 
@@ -33,6 +35,11 @@ export default function AddStudentModal({
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {warningText ? (
+          <div className="alert alert-warning" role="alert">
+            {warningText}
+          </div>
+        ) : null}
         <FormControl
           placeholder="Student(s) Email Address (comma-separated)"
           value={email}
