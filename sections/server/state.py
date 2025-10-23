@@ -732,3 +732,101 @@ def create_state_client(app: flask.Flask):
             **refresh_state(),
             "custom": {"students": students[:-2]},
         }
+    
+    @admin_required
+    @api
+    def get_student_section_ids(email: str):
+        student = User.query.filter_by(
+            email= email,
+            course=get_course()
+        ).one_or_none()
+        if (student is None):
+            return {email: []}
+        section_ids = [section.id for section in student.sections]
+        return {email: section_ids}
+
+    #get the student's discussion attendance
+    @admin_required
+    @api
+    def get_student_discussion_attendance(email:str):
+        student = User.query.filter_by(
+                    email = email,
+                    course=get_course()
+                ).one_or_none()
+        
+        discussion_section = None
+        if student:
+            for section in student.sections:
+                if section.name == 'Discussion':
+                    discussion_section = section
+
+        discussion_present_days = []
+        if discussion_section:
+            attendances = (Attendance.query.join(Attendance.session)
+            .filter(
+                Attendance.student_id == student.id,
+                Attendance.status == AttendanceStatus.present,
+                Session.section_id == discussion_section.id
+            )
+            .options(joinedload(Attendance.session))
+            .all()
+            )
+            discussion_present_days = [attendance.session.start_time for attendance in attendances]
+        return {"discussion attendance": discussion_present_days}
+
+    #get the student's lab attendance
+    @admin_required
+    @api
+    def get_student_lab_attendance(email:str):
+        student = User.query.filter_by(
+                    email = email,
+                    course=get_course()
+                ).one_or_none()
+        lab_section = None
+        if student:
+            for section in student.sections:
+                if section.name == 'Lab':
+                    lab_section = section
+        lab_present_days = []
+        if lab_section:
+            attendances = (Attendance.query.join(Attendance.session)
+            .filter(
+                Attendance.student_id == student.id,
+                Attendance.status == AttendanceStatus.present,
+                Session.section_id == lab_section.id
+            )
+            .options(joinedload(Attendance.session))
+            .all()
+            )
+            lab_present_days = [attendance.session.start_time for attendance in attendances]
+        return {"lab attendance": lab_present_days}
+    
+    #get the student's tutoring attendance
+    @admin_required
+    @api
+    def get_student_tutoring_attendance(email:str):
+        student = User.query.filter_by(
+                    email = email,
+                    course=get_course()
+                ).one_or_none()
+        tutoring_section = None
+        if student:
+            for section in student.sections:
+                if section.name == 'Tutoring':
+                    tutoring_section = section
+        tutoring_present_days = []
+        if tutoring_section:
+            attendances = (Attendance.query.join(Attendance.session)
+            .filter(
+                Attendance.student_id == student.id,
+                Attendance.status == AttendanceStatus.present,
+                Session.section_id == tutoring_section.id
+            )
+            .options(joinedload(Attendance.session))
+            .all()
+            )
+            tutoring_present_days = [attendance.session.start_time for attendance in attendances]
+        return {"tutoring attendance": tutoring_present_days}
+
+
+
