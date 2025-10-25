@@ -733,8 +733,8 @@ def create_state_client(app: flask.Flask):
             "custom": {"students": students[:-2]},
         }
     
-    @admin_required
     @api
+    @admin_required
     def get_student_section_ids(email: str):
         student = User.query.filter_by(
             email= email,
@@ -745,9 +745,8 @@ def create_state_client(app: flask.Flask):
         section_ids = [section.id for section in student.sections]
         return {email: section_ids}
 
-    #get the student's discussion attendance
-    @admin_required
     @api
+    @admin_required
     def get_student_discussion_attendance(email:str):
         student = User.query.filter_by(
                     email = email,
@@ -772,11 +771,10 @@ def create_state_client(app: flask.Flask):
             .all()
             )
             discussion_present_days = [attendance.session.start_time for attendance in attendances]
-        return {"discussion attendance": discussion_present_days}
+        return {"attendance": discussion_present_days}
 
-    #get the student's lab attendance
-    @admin_required
     @api
+    @admin_required
     def get_student_lab_attendance(email:str):
         student = User.query.filter_by(
                     email = email,
@@ -799,11 +797,10 @@ def create_state_client(app: flask.Flask):
             .all()
             )
             lab_present_days = [attendance.session.start_time for attendance in attendances]
-        return {"lab attendance": lab_present_days}
+        return {"attendance": lab_present_days}
     
-    #get the student's tutoring attendance
-    @admin_required
     @api
+    @admin_required
     def get_student_tutoring_attendance(email:str):
         student = User.query.filter_by(
                     email = email,
@@ -826,7 +823,7 @@ def create_state_client(app: flask.Flask):
             .all()
             )
             tutoring_present_days = [attendance.session.start_time for attendance in attendances]
-        return {"tutoring attendance": tutoring_present_days}
+        return {"attendance": tutoring_present_days}
 
 
 
