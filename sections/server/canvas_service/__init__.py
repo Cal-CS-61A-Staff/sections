@@ -4,6 +4,8 @@ from canvasapi.user import User
 from canvasapi.course import Course
 import os
 from dotenv import load_dotenv
+from common.course_config import get_bcourses_id
+from models import Failure
 
 def _get_client(key=None) -> Canvas:
     if not key:
@@ -12,6 +14,16 @@ def _get_client(key=None) -> Canvas:
         raise Exception('Key and access token not found')
     load_dotenv(override=True)
     return Canvas(os.getenv('CANVAS_SERVER_URL'), key)
+
+def get_student_from_email(email, key=None):
+    course_id = get_bcourses_id()
+    course = get_course(course_id)
+    students = course.get_enrollments(type=['StudentEnrollment'])
+    for enrollment in students:
+        student = enrollment.user
+        if email == student["login_id"]:
+            return student["name"]
+    return None # no student found
 
 def get_user(user_id, key=None) -> User:
     return _get_client(key).get_user(user_id)

@@ -19,6 +19,8 @@ from common.rpc.auth import post_slack_message, validate_secret
 from common.rpc.secrets import only
 from common.rpc.sections import rpc_export_attendance
 from import_sheet import import_sections_from_url, import_enrollment_from_url
+import canvas_service
+
 from models import (
     Attendance,
     AttendanceStatus,
@@ -485,6 +487,7 @@ def create_state_client(app: flask.Flask):
     @api
     @staff_required
     def add_student(email: str, section_id: str):
+        #this function is never called!! use add_students instead
         section_id = int(section_id)
         section = Section.query.filter_by(id=section_id, course=get_course()).one()
         student = User.query.filter_by(email=email, course=get_course()).one_or_none()
@@ -506,9 +509,14 @@ def create_state_client(app: flask.Flask):
             student = User.query.filter_by(
                 email=email, course=get_course()
             ).one_or_none()
+            if student is not None and student.is_staff:
+                raise Failure("Attempted to add staff: {student.name}")
             if student is None:
+                canvasname = canvas_service.get_student_from_email(email)
+                if (not canvasname):
+                    raise Failure("Could not find email that belongs to this class")
                 student = User(
-                    email=email, name=email, is_staff=False, is_admin=False, course=get_course()
+                    email=email, name=canvasname, is_staff=False, is_admin=False, course=get_course()
                 )
             add_student_helper(student, section)
         db.session.commit()
