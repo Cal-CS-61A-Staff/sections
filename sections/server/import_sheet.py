@@ -60,6 +60,7 @@ class SectionsHeader:
 @dataclass
 class EnrollmentHeader:
     student_email_index: int = header_field("Student Email")
+    student_name_index: int = header_field("Student Name")
     staff_email_index: int = header_field("Staff Email")
     location_index: int = header_field("Location")
     day_index: int = header_field("Day")
@@ -150,6 +151,7 @@ def import_enrollment(data: Iterator):
 
     for row in data:
         student_email = row[header.student_email_index]
+        student_name = row[header.student_name_index]
         staff_email = row[header.staff_email_index]
         location = row[header.location_index]
         start_time = parse_time_string(row[header.day_index], row[header.start_index])
@@ -160,7 +162,7 @@ def import_enrollment(data: Iterator):
             course=get_course()
         ).one_or_none() or User(
             email=student_email,
-            name=student_email,
+            name=student_name,
             is_staff=False,
             is_admin=False,
             course=get_course()
