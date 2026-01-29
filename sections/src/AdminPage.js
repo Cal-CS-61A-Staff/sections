@@ -38,6 +38,8 @@ export default function AdminPage(): React.Node {
 
   const [removing, setRemoving] = useState(false);
   const removeStudents = useAPI("remove_students");
+  const [removingTutoring, setRemovingTutoring] = useState(false);
+  const removeStudentsFromTutoring = useAPI("remove_students_from_tutoring");
 
   const updateConfig = useAPI("update_config");
   const exportAttendance = useAPI(
@@ -269,6 +271,24 @@ export default function AdminPage(): React.Node {
                   <ReactMarkdown>{message}</ReactMarkdown>
                 </Alert>
               </p>
+
+              {/* Line 1: Import Buttons */}
+              <p>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowImportSectionsModal(true)}
+                >
+                  Import Sections
+                </Button>{" "}
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowImportEnrollmentModal(true)}
+                >
+                  Import Students
+                </Button>
+              </p>
+
+              {/* Line 2: Export Buttons */}
               <p>
                 <Button
                   variant="secondary"
@@ -281,47 +301,60 @@ export default function AdminPage(): React.Node {
                   onClick={() => exportAttendance({})}
                 >
                   Export Full Attendances
-                </Button>{" "}
+                </Button>
+              </p>
+
+              {/* Line 3: Description Text */}
+              <p>
+                The following will obtain emails of students who have at least one unexcused absence or 3 excused absences in their enrolled tutoring section.
+              </p>
+
+              {/* Line 4: Copy Students to Drop */}
+              <p>
                 <Button
                   variant="secondary"
                   onClick={() => fetchToDrop()}
                 >
-                  Copy Students To Drop
+                  Copy Students To Drop (Tutoring)
                 </Button>{" "}
                 <Button
-                  variant="secondary"
-                  onClick={() => setShowImportSectionsModal(true)}
+                  variant="danger"
+                  onClick={() => setRemovingTutoring(true)}
                 >
-                  Import Sections
-                </Button>{" "}
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowImportEnrollmentModal(true)}
-                >
-                  Import Enrollment
-                </Button>{" "}
-                {currentUser?.isAdmin && ( 
-                  <>
-                    <Button variant="danger" onClick={() => setRemoving(true)}>
-                      Remove Students
-                    </Button>
-                    <AddStudentModal
-                      show={removing}
-                      title="Remove student(s)"
-                      onAdd={(students) => removeStudents({ students })}
-                      onClose={() => setRemoving(false)}
-                    />{" "}
-                    <Button variant="danger" onClick={() => setResetting(true)}>
-                      Reset Sections Tool
-                    </Button>
-                    <ResetSectionsModal
-                      show={resetting}
-                      onReset={() => resetSections()}
-                      onClose={() => setResetting(false)}
-                    />
-                  </>
-                )}
+                  Remove Students from Tutoring
+                </Button>
+                <AddStudentModal
+                  show={removingTutoring}
+                  title="Remove student(s) from Tutoring sections"
+                  onAdd={(students) => removeStudentsFromTutoring({ students })}
+                  onClose={() => setRemovingTutoring(false)}
+                />
               </p>
+
+              {/* Line 5: Admin Management Actions */}
+              {currentUser?.isAdmin && (
+                <p>
+                  <Button variant="danger" onClick={() => setRemoving(true)}>
+                    Remove Students from All Sections
+                  </Button>
+                  <AddStudentModal
+                    show={removing}
+                    title="Remove student(s) from All Sections"
+                    onAdd={(students) => removeStudents({ students })}
+                    onClose={() => setRemoving(false)}
+                  />{" "}
+                  <Button variant="danger" onClick={() => setResetting(true)}>
+                    Reset Sections Tool
+                  </Button>
+                  <ResetSectionsModal
+                    show={resetting}
+                    onReset={() => resetSections()}
+                    onClose={() => setResetting(false)}
+                  />
+                </p>
+              )}
+
+              {/* Line 6: Reminders */}
               <p>
                 <Button
                   variant="danger"

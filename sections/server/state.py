@@ -485,6 +485,16 @@ def create_state_client(app: flask.Flask):
         return refresh_state()
 
     @api
+    @admin_required
+    def remove_students_from_tutoring(students: str):
+        for s in parse_emails(students):
+            student = User.query.filter_by(email=s, course=get_course()).one_or_none()
+            if student:
+                student.sections = [sec for sec in student.sections if sec.name != "Tutoring"]
+        db.session.commit()
+        return refresh_state()
+
+    @api
     @staff_required
     def add_student(email: str, section_id: str):
         #this function is never called!! use add_students instead
@@ -703,38 +713,37 @@ def create_state_client(app: flask.Flask):
         students = ""
         for student in (
             User.query.filter_by(is_staff=False, course=get_course())
-            .filter(any(User.sections))
+            .filter(User.sections.any())
             .all()
         ):
-            n_absent = 0
-            attended_first = attended_second = False
-            n_first_week_sessions = 0
-            for attendance in student.attendances:
-                start_time = attendance.session.start_time
-                if (
-                    start_time >= FIRST_WEEK_START
-                    and start_time < FIRST_WEEK_START + ONE_WEEK
-                ):
-                    n_first_week_sessions += 1
-                if attendance.status == AttendanceStatus.absent:
-                    n_absent += 1
-                else:
-                    if (
-                        start_time >= FIRST_WEEK_START
-                        and start_time < FIRST_WEEK_START + ONE_WEEK
-                    ):
-                        if not attended_first:
-                            attended_first = True
-                        else:
-                            attended_second = True
-            if (
-                (not IS_SUMMER and not attended_first and n_first_week_sessions > 0)
-                or (
-                    (IS_SUMMER and not attended_second and n_first_week_sessions > 1)
-                    or (IS_SUMMER and not attended_first and n_first_week_sessions > 0)
+            tutoring_section = None
+            absences = []
+            excused = []
+            if student:
+                for section in student.sections:
+                    if section.name == 'Tutoring':
+                        tutoring_section = section
+            if tutoring_section:
+                excused = (Attendance.query.join(Attendance.session)
+                .filter(
+                    Attendance.student_id == student.id,
+                    Attendance.status == AttendanceStatus.excused,
+                    Session.section_id == tutoring_section.id
                 )
-                or n_absent > MAX_ABSENCES
-            ):
+                .options(joinedload(Attendance.session))
+                .all()
+                )
+            if tutoring_section:
+                absences = (Attendance.query.join(Attendance.session)
+                .filter(
+                    Attendance.student_id == student.id,
+                    Attendance.status == AttendanceStatus.absent,
+                    Session.section_id == tutoring_section.id
+                )
+                .options(joinedload(Attendance.session))
+                .all()
+                )
+            if (len(absences) >= 1 or len(excused) >= 3):
                 students += student.email + ", "
         return {
             **refresh_state(),
