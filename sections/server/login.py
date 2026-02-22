@@ -10,7 +10,7 @@ from common.oauth_client import create_oauth_client, get_user, is_staff
 from common.url_for import url_for
 from models import User, db, user_section
 
-import canvas_service as canvas_service
+import common.canvas_service as canvas_service
 
 dev = getenv("ENV") != "prod"
 

@@ -19,7 +19,7 @@ from common.rpc.auth import post_slack_message, validate_secret
 from common.rpc.secrets import only
 from common.rpc.sections import rpc_export_attendance
 from import_sheet import import_sections_from_url, import_enrollment_from_url
-import canvas_service
+import common.canvas_service as canvas_service
 
 from models import (
     Attendance,
@@ -615,7 +615,7 @@ def create_state_client(app: flask.Flask):
             location = section.location or ""
             day = ""
             start = ""
-            
+
             DAY_MAP = {
                 0: "M",
                 1: "T",
@@ -749,7 +749,7 @@ def create_state_client(app: flask.Flask):
             **refresh_state(),
             "custom": {"students": students[:-2]},
         }
-    
+
     @api
     @admin_required
     def get_student_section_ids(email: str):
@@ -769,7 +769,7 @@ def create_state_client(app: flask.Flask):
                     email = email,
                     course=get_course()
                 ).one_or_none()
-        
+
         discussion_section = None
         if student:
             for section in student.sections:
@@ -815,7 +815,7 @@ def create_state_client(app: flask.Flask):
             )
             lab_present_days = [attendance.session.start_time for attendance in attendances]
         return {"attendance": lab_present_days}
-    
+
     @api
     @admin_required
     def get_student_tutoring_attendance(email:str):

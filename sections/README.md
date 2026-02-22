@@ -35,9 +35,9 @@ The production Sections app is deployed on GCP Cloud Run and interacts with bCou
 
 ### More About Accessing Canvas APIs
 
-Our wrapper to access Canvas APIs can be found at `sections/server/canvas_service/__init__.py`. The methods that our currently provisioned API key gives us permission to access can be found in [common/oauth_client.py](https://github.com/Cal-CS-61A-Staff/berkeley-cs61a/blob/e448458532f9dea5cc9b2077bde018beb1c90797/common/oauth_client.py#L174-L180).
+Our wrapper to access Canvas APIs can be found at `common/canvas_service/__init__.py`. The methods that our currently provisioned API key gives us permission to access can be found in [common/oauth_client.py](https://github.com/Cal-CS-61A-Staff/berkeley-cs61a/blob/e448458532f9dea5cc9b2077bde018beb1c90797/common/oauth_client.py#L174-L180).
 
-bCourses API keys have strict scope and permissions. bCourses API keys should only be used for the exact purpose they were granted for. Specifically, the sections app API key should not be used by another app or for any purpose outside the approved scope for the sections app. If you need a new API key with broader scope or for a different app, please contact @pancakereport to discuss. The process for obtaining a new API key requires faculty or full time staff (like @pancakereport) support and working with RTL who manage bCourses. 
+bCourses API keys have strict scope and permissions. bCourses API keys should only be used for the exact purpose they were granted for. Specifically, the sections app API key should not be used by another app or for any purpose outside the approved scope for the sections app. If you need a new API key with broader scope or for a different app, please contact @pancakereport to discuss. The process for obtaining a new API key requires faculty or full time staff (like @pancakereport) support and working with RTL who manage bCourses.
 
 ## Import Test Sections Locally
 
