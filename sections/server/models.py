@@ -106,7 +106,7 @@ class Session(db.Model):
     course: str = db.Column(db.String(255), index=True)
     start_time: int = db.Column(db.Integer)
     section_id: int = db.Column(db.Integer, db.ForeignKey("section.id"), index=True)
-    section: Section = db.relationship("Section", backref=db.backref("sessions"), lazy="joined")
+    section: Section = db.relationship(lambda: Section, backref=db.backref("sessions"), lazy="joined")
     attendances: List["Attendance"]
 
     @property
@@ -139,14 +139,14 @@ class Attendance(db.Model):
     status: AttendanceStatus = db.Column(db.Enum(AttendanceStatus))
     session_id: int = db.Column(db.Integer, db.ForeignKey("session.id"), index=True)
     session: Session = db.relationship(
-        "Session",
+        lambda: Session,
         backref=db.backref("attendances", lazy="joined"),
         lazy="joined",
         innerjoin=True,
     )
     student_id: int = db.Column(db.Integer, db.ForeignKey("user.id"), index=True)
     student: "User" = db.relationship(
-        "User", backref=db.backref("attendances"), lazy="joined", innerjoin=True
+       lambda: User, backref=db.backref("attendances"), lazy="joined", innerjoin=True
     )
 
     @property
@@ -169,7 +169,6 @@ class User(db.Model, UserMixin):
     def __init__(self, email: str, name: str, is_staff: bool, course: str, is_admin: bool):
         # noinspection PyArgumentList
         super().__init__(email=email, name=name, is_staff=is_staff, course=course, is_admin=is_admin)
-
     id: int = db.Column(db.Integer, primary_key=True)
     course: str = db.Column(db.String(255), index=True)
     email: str = db.Column(db.String(255), index=True)

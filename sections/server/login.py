@@ -1,7 +1,7 @@
 from os import getenv
 
 import flask
-from flask import redirect
+from flask import redirect, session
 from flask_login import LoginManager, login_user, logout_user
 import canvasapi
 

@@ -6,11 +6,12 @@ from datetime import datetime
 from functools import wraps
 from json import dumps
 from typing import List, Optional, Union
+from unittest import result
 from zoneinfo import ZoneInfo
 from import_sheet import parse_time_string
 
 import flask
-from flask import abort, jsonify, render_template, request
+from flask import abort, jsonify, render_template, request, current_app
 from flask_login import current_user, login_required, login_user
 from sqlalchemy.orm import joinedload
 
@@ -101,7 +102,11 @@ def create_state_client(app: flask.Flask):
     def api(handler):
         def wrapped():
             try:
-                return jsonify({"success": True, "data": handler(**request.json)})
+                #return jsonify({"success": True, "data": handler(**request.json)})
+                result = handler(**request.json)
+                if isinstance(result, Failure):
+                    return jsonify({"success": False, "message": str(result)})
+                return jsonify({"success": True, "data": result})
             except Failure as failure:
                 return jsonify({"success": False, "message": str(failure)})
 
@@ -522,7 +527,11 @@ def create_state_client(app: flask.Flask):
             if student is not None and student.is_staff:
                 raise Failure("Attempted to add staff: {student.name}")
             if student is None:
-                canvasname = canvas_service.get_student_from_email(email)
+                try:
+                    canvasname = canvas_service.get_student_from_email(email)
+                except Exception as e:
+                    return Failure("Adding student failed. Make sure the email is correct and belongs to this class.")
+
                 if (not canvasname):
                     raise Failure("Could not find email that belongs to this class")
                 student = User(
