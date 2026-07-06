@@ -561,12 +561,12 @@ def create_state_client(app: flask.Flask):
     @rpc_export_attendance.bind(app)
     @only("grade-display", allow_staging=True)
     def export_attendance_rpc():
-        login_user(User.query.filter_by(course="cs61a", is_staff=True).first())
+        login_user(User.query.filter_by(course = get_course(), is_staff=True).first())
         return export_helper()
 
     @api
     def export_attendance_secret(secret: str):
-        if validate_secret(secret=secret) == "cs61a":
+        if validate_secret(secret=secret) == get_course():
             return export_helper()
 
     def export_helper():
@@ -662,7 +662,17 @@ def create_state_client(app: flask.Flask):
     def fetch_user(user_id: str):
         user_id = int(user_id)
         user = User.query.filter_by(id=user_id, course=get_course()).one_or_none()
-        return user.full_json
+        if user is None:
+            raise Failure(f"No user found with id {user_id}")
+        return user.simple_json
+
+    @api
+    @staff_required
+    def get_userid(email: str):
+        user = User.query.filter_by(email=email, course=get_course()).one_or_none()
+        if user is None:
+            raise Failure(f"No user found with email {email}")
+        return user.id
 
     @api
     @admin_required
@@ -778,26 +788,21 @@ def create_state_client(app: flask.Flask):
                     email = email,
                     course=get_course()
                 ).one_or_none()
-
-        discussion_section = None
-        if student:
-            for section in student.sections:
-                if section.name == 'Discussion':
-                    discussion_section = section
-
         discussion_present_days = []
-        if discussion_section:
-            attendances = (Attendance.query.join(Attendance.session)
+        if student:
+            attendances = (Attendance.query.join(Attendance.session).join(Session.section)
             .filter(
                 Attendance.student_id == student.id,
                 Attendance.status == AttendanceStatus.present,
-                Session.section_id == discussion_section.id
+                Section.name == 'Discussion',
+                Section.course == get_course()
             )
             .options(joinedload(Attendance.session))
             .all()
             )
             discussion_present_days = [attendance.session.start_time for attendance in attendances]
         return {"attendance": discussion_present_days}
+
 
     @api
     @admin_required
@@ -806,18 +811,14 @@ def create_state_client(app: flask.Flask):
                     email = email,
                     course=get_course()
                 ).one_or_none()
-        lab_section = None
-        if student:
-            for section in student.sections:
-                if section.name == 'Lab':
-                    lab_section = section
         lab_present_days = []
-        if lab_section:
-            attendances = (Attendance.query.join(Attendance.session)
+        if student:
+            attendances = (Attendance.query.join(Attendance.session).join(Session.section)
             .filter(
                 Attendance.student_id == student.id,
                 Attendance.status == AttendanceStatus.present,
-                Session.section_id == lab_section.id
+                Section.name == 'Lab',
+                Section.course == get_course()
             )
             .options(joinedload(Attendance.session))
             .all()
@@ -832,24 +833,17 @@ def create_state_client(app: flask.Flask):
                     email = email,
                     course=get_course()
                 ).one_or_none()
-        tutoring_section = None
-        if student:
-            for section in student.sections:
-                if section.name == 'Tutoring':
-                    tutoring_section = section
         tutoring_present_days = []
-        if tutoring_section:
-            attendances = (Attendance.query.join(Attendance.session)
+        if student:
+            attendances = (Attendance.query.join(Attendance.session).join(Session.section)
             .filter(
                 Attendance.student_id == student.id,
                 Attendance.status == AttendanceStatus.present,
-                Session.section_id == tutoring_section.id
+                Section.name == 'Tutoring',
+                Section.course == get_course()
             )
             .options(joinedload(Attendance.session))
             .all()
             )
             tutoring_present_days = [attendance.session.start_time for attendance in attendances]
         return {"attendance": tutoring_present_days}
-
-
-

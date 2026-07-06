@@ -228,6 +228,38 @@ class User(db.Model, UserMixin):
             ],
         }
 
+    @property
+    def simple_json(self):
+        attendances = (
+        Attendance.query.filter_by(student_id=self.id)
+        .options(
+            joinedload(Attendance.session, innerjoin=True)
+            .joinedload(Session.section)
+        )
+        .all()
+        )
+        return {
+            **self.json,
+            "isAdmin": self.is_admin,
+            "attendanceHistory": [
+                {
+                    "status": attendance.status.name,
+                    "session": {
+                        "id": attendance.session.id,
+                        "startTime": attendance.session.start_time,
+                    },
+                    "section": {
+                        "id": attendance.session.section.id,
+                        "name": attendance.session.section.name,
+                        "location": attendance.session.section.location,
+                    } if attendance.session.section else None,
+                }
+                for attendance in sorted(
+                    attendances, key=lambda attendance: attendance.session.start_time
+                )
+            ],
+        }
+
 
 class CourseConfig(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
