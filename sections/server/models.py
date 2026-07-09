@@ -231,12 +231,13 @@ class User(db.Model, UserMixin):
     @property
     def simple_json(self):
         attendances = (
-        Attendance.query.filter_by(student_id=self.id)
-        .options(
-            joinedload(Attendance.session, innerjoin=True)
-            .joinedload(Session.section)
-        )
-        .all()
+            Attendance.query.filter_by(student_id=self.id)
+            .options(
+                joinedload(Attendance.session, innerjoin=True)
+                .joinedload(Session.section)
+                .joinedload(Section.staff)
+            )
+            .all()
         )
         return {
             **self.json,
@@ -252,6 +253,9 @@ class User(db.Model, UserMixin):
                         "id": attendance.session.section.id,
                         "name": attendance.session.section.name,
                         "location": attendance.session.section.location,
+                        "staff": attendance.session.section.staff.json
+                            if attendance.session.section.staff is not None
+                            else None,
                     } if attendance.session.section else None,
                 }
                 for attendance in sorted(
