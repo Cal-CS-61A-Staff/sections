@@ -1,6 +1,7 @@
-# Local Development
+# Sections 
 
-## Set Up
+
+## Local Development Set Up
 ## Please work on a branch! After you've cloned the repo, make sure you've switched to the branch!
 
 ### Development with a Dev Container (Docker)
@@ -56,6 +57,22 @@ python3 import_locally.py --type enrollment --file test_csvs/lab_enrollment.csv
 1. Download the sections database to obtain a `.sql` file. Relevant Links [1](https://cloud.google.com/sql/docs/mysql/import-export/import-export-sql) and [2](https://cloud.google.com/storage/docs/downloading-objects).
 2. Likely the export uses MySQL syntax, so update it to SQLite.
 3. In the `server` directory, delete `app.db` and run `sqlite3 app.db < gcp-sections-export.sql`.
+
+## API
+Functions marked with the `@api` decorator are exposed as public methods. To call them, you must be an admin on auth for the course you're querying about. To create a secret, find the appropriate course on auth and create a new client under "Create new client and obtain secret key." Please follow best practices for storing the secret because if it is leaked, student information can be exposed. Then, curl away. Example request:
+
+```
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+        "secret": "",
+        "email": "", # your email, must be admin on auth
+        "args": {
+            "email": "<student>@berkeley.edu"
+        }
+      }' \
+  "https://sections.cs61a.org/api/sudo/get_student_discussion_attendance"
+```
 
 ## Notes
 1. Use `yarn run flow` for typechecking.
