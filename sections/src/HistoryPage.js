@@ -16,6 +16,7 @@ import { sectionTitle } from "./models";
 import StateContext from "./StateContext";
 import useAPI from "./useAPI";
 
+
 type Props = {
   userID?: ID,
 };
@@ -51,10 +52,21 @@ export default function HistoryPage({ userID }: Props): React.Node {
       <Row>
         <Col>
           <h2>{user.name}</h2>
+
+          {userID == null && 
+            (
+              <p> To change the name displayed here, {" "}
+                <a href='https://berkeley.service-now.com/kb/en/how-do-i-change-my-name-or-pronouns-in-bcourses?id=kb_article_view&sysparm_article=KB0010898'>follow these instructions.</a>
+              </p>
+            )
+          }
+
           <p className="lead">
             {" "}
             <a href={`mailto:${user.email}`}>{user.email}</a>
           </p>
+          
+
           <Table hover>
             <thead>
               <tr className="text-center">

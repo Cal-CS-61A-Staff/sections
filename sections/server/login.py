@@ -22,9 +22,9 @@ def create_login_client(app: flask.Flask):
     def login(resp: dict):
         user_info = resp['user']
         user_id = user_info['id']
-        canvas_user = canvas_service.get_user(user_id)
         user_email = canvas_service.get_email(user_id)
         user_name = canvas_service.get_name(user_id)
+        user_preferred_name = canvas_service.get_preferred_name(user_id)
         user_courses = canvas_service.get_user_courses(user_id)
         app_course_id: int = get_bcourses_id()
         course = get_course()
@@ -35,14 +35,16 @@ def create_login_client(app: flask.Flask):
         if user is None:
             user = User(
                 email=user_email,
-                name=user_name,
+                name=user_preferred_name,
                 is_staff=False,
                 is_admin=False,
                 course=course
+                
             )
             db.session.add(user)
-        user.name = user_name or user_email
 
+        user.name = user_preferred_name or user_name or user_email
+    
         try:
             app_course = canvas_service.get_course(app_course_id)
             user.is_staff = canvas_service.is_staff(app_course, user_id)

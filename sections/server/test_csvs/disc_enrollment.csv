@@ -1,7 +1,7 @@
-Student Email,Staff Email,Location,Day,Start,Type
-a@berkeley.edu,denero@berkeley.edu,Mars,T,08:00a,Discussion
-b@berkeley.edu,denero@berkeley.edu,Mars,F,08:00a,Discussion
-1@berkeley.edu,denero@berkeley.edu,Mars,W,08:00a,Discussion
-2@berkeley.edu,denero@berkeley.edu,Mars,W,08:00a,Discussion
-3@berkeley.edu,denero@berkeley.edu,Mars,W,08:00a,Discussion
-benji.xu@berkeley.edu,denero@berkeley.edu,Mars,W,08:00a,Discussion
+Student Email,Student Name,Staff Email,Location,Day,Start,Type
+a@berkeley.edu,A,denero@berkeley.edu,Mars,T,08:00a,Discussion
+b@berkeley.edu,B,denero@berkeley.edu,Mars,F,08:00a,Discussion
+1@berkeley.edu,One,denero@berkeley.edu,Mars,W,08:00a,Discussion
+2@berkeley.edu,Two,denero@berkeley.edu,Mars,W,08:00a,Discussion
+3@berkeley.edu,Three,denero@berkeley.edu,Mars,W,08:00a,Discussion
+benji.xu@berkeley.edu,Benji Xu,denero@berkeley.edu,Mars,W,08:00a,Discussion

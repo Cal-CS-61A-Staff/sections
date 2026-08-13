@@ -11,6 +11,7 @@ export type Person = {
   name: string,
   email: string,
   isStaff: boolean,
+  preferredName: ?string
 };
 
 // export type Slot = {
