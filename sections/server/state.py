@@ -1,5 +1,7 @@
 import csv
 import re
+import time
+from canvasapi.exceptions import InvalidAccessToken, Unauthorized
 
 from io import StringIO
 from datetime import datetime
@@ -11,7 +13,7 @@ from zoneinfo import ZoneInfo
 from import_sheet import parse_time_string
 
 import flask
-from flask import abort, jsonify, render_template, request, current_app
+from flask import abort, jsonify, render_template, request, current_app, session
 from flask_login import current_user, login_required, login_user
 from sqlalchemy.orm import joinedload
 
@@ -197,7 +199,8 @@ def create_state_client(app: flask.Flask):
                     key=section_sorter,
                 )
             ]
-            out["currentUser"] = current_user.full_json
+            # Keep attendance details without repeating full section rosters.
+            out["currentUser"] = current_user.simple_json
 
         return out
 
@@ -520,6 +523,7 @@ def create_state_client(app: flask.Flask):
     def add_students(emails: str, section_id: str):
         section_id = int(section_id)
         section = Section.query.filter_by(id=section_id, course=get_course()).one()
+        access_token = session.get("canvas_access_token")
         for email in parse_emails(emails):
             student = User.query.filter_by(
                 email=email, course=get_course()
@@ -527,10 +531,26 @@ def create_state_client(app: flask.Flask):
             if student is not None and student.is_staff:
                 raise Failure("Attempted to add staff: {student.name}")
             if student is None:
+                # Existing students need no Canvas token; unknown students need a fresh login.
+                if not access_token or time.time() + 60 >= session.get("canvas_token_expires_at", 0):
+                    raise Failure(
+                        "Canvas authorization has expired. Please log out and sign in "
+                        "with Canvas again, then retry adding students."
+                    )
                 try:
-                    canvasname = canvas_service.get_student_from_email(email)
-                except Exception as e:
-                    return Failure("Adding student failed. Make sure the email is correct and belongs to this class.")
+                    canvasname = canvas_service.get_student_from_email(
+                        email, access_token
+                    )
+                except (InvalidAccessToken, Unauthorized):
+                    raise Failure(
+                        "Canvas authorization is no longer valid. Please log out and sign in "
+                        "with Canvas again, then retry adding students."
+                    )
+                except Exception:
+                    return Failure(
+                        "Adding student failed. Make sure the email is correct "
+                        "and belongs to this class."
+                    )
 
                 if (not canvasname):
                     raise Failure("Could not find email that belongs to this class")

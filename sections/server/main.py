@@ -1,10 +1,9 @@
 from flask import Flask
 from flask_debugtoolbar import DebugToolbarExtension
-from flask_session import Session
 
 from datetime import timedelta
 from login import create_login_client
-from models import create_models, db, user_section
+from models import create_models, db
 from state import create_state_client
 
 app = Flask(
@@ -22,15 +21,11 @@ create_login_client(app)
 create_models(app)
 db.init_app(app)
 
-app.config['SESSION_TYPE'] = 'sqlalchemy'
-app.config['SESSION_SQLALCHEMY'] = db
-app.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions'
-app.config['SESSION_PERMANENT'] = True
+# Signed cookies avoid database session writes on ordinary requests.
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = not app.debug
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-Session(app)
 
 with app.app_context():
     db.create_all(app=app)
