@@ -11,7 +11,7 @@ export type Person = {
   name: string,
   email: string,
   isStaff: boolean,
-  preferredName: ?string
+  preferredName: ?string,
 };
 
 // export type Slot = {
@@ -28,6 +28,7 @@ export type Section = {
   id: ID,
   staff: ?Person,
   students: Array<Person>,
+  enrollmentCount?: number,
   description: string,
   capacity: number,
   tags: Array<string>,
@@ -123,6 +124,10 @@ export function sectionTitle(section: ?Section): React.MixedElement {
   );
 }
 
+export function getEnrollmentCount(section: Section): number {
+  return section.enrollmentCount ?? section.students.length;
+}
+
 export function nextSessionStartTime(section: Section, dayOffset: number = 0) {
   const time = moment.unix(section.startTime).tz(TZ);
   while (time.isBefore(moment().add(dayOffset, "days"))) {
@@ -146,8 +151,7 @@ export function sectionInterval(section: Section): React.MixedElement {
   const useLocalString = document.cookie
     .split("; ")
     .find((row) => row.startsWith("useLocal="));
-  const useLocal =
-    useLocalString && useLocalString.split("=")[1] === "true";
+  const useLocal = useLocalString && useLocalString.split("=")[1] === "true";
 
   const tz = useLocal ? moment.tz.guess() : TZ;
 
@@ -182,7 +186,9 @@ export function getSectionDay(section: Section) {
   return dayCodes[dayIndex];
 }
 
-export function sortedSections<T: Section | SectionDetails>(sections: Array<T>): Array<T> {
+export function sortedSections<T: Section | SectionDetails>(
+  sections: Array<T>
+): Array<T> {
   return sections
     .slice()
     .sort((section1, section2) =>

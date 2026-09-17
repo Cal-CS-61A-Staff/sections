@@ -66,13 +66,34 @@ class Section(db.Model):
 
     @property
     def json(self):
+        return self.to_json()
+
+    def to_json(
+        self,
+        include_students=True,
+        enrollment_count=None,
+        reveal_roster=False,
+    ):
+        if include_students:
+            students = [
+                student.identity_json if reveal_roster else student.json
+                for student in sorted(self.students, key=lambda student: student.name)
+            ]
+            if enrollment_count is None:
+                enrollment_count = len(students)
+        else:
+            if enrollment_count is None:
+                raise ValueError("enrollment_count is required without a roster")
+            # Clients loaded before this API change still use students.length for
+            # capacity. Preserve that behavior without exposing or serializing the
+            # course-wide roster. New clients use enrollmentCount directly.
+            students = [None] * enrollment_count
+
         return {
             "id": str(self.id),
             "staff": self.staff.json if self.staff is not None else None,
-            "students": [
-                student.json
-                for student in sorted(self.students, key=lambda student: student.name)
-            ],
+            "students": students,
+            "enrollmentCount": enrollment_count,
             "description": self.description,
             "capacity": self.capacity,
             "canSelfEnroll": self.can_self_enroll,
@@ -182,6 +203,16 @@ class User(db.Model, UserMixin):
     attendances: List["Attendance"]
 
     @property
+    def identity_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "isStaff": self.is_staff,
+            "isAdmin": self.is_admin,
+        }
+
+    @property
     def json(self):
         can_see = (
             current_user.is_staff
@@ -190,13 +221,7 @@ class User(db.Model, UserMixin):
             or any([s in self.sections for s in current_user.sections])
         )
         if can_see:
-            return {
-                "id": self.id,
-                "name": self.name,
-                "email": self.email,
-                "isStaff": self.is_staff,
-                "isAdmin": self.is_admin,
-            }
+            return self.identity_json
         else:
             return {
                 "id": randrange(10**6),

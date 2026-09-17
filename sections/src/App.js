@@ -8,6 +8,7 @@ import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import NavDropdown from "react-bootstrap/NavDropdown";
+import Spinner from "react-bootstrap/Spinner";
 import { BrowserRouter as Router, Link, Route, Switch } from "react-router-dom";
 import LabPage from "./LabPage";
 import DiscPage from "./DiscPage";
@@ -67,7 +68,17 @@ export default function App(): React.Node {
   }, [state, refreshState]);
 
   if (state == null) {
-    return null;
+    return (
+      <div
+        className="d-flex flex-column align-items-center justify-content-center text-info"
+        style={{ minHeight: "100vh" }}
+        role="status"
+        aria-live="polite"
+      >
+        <Spinner animation="border" className="mb-3" />
+        <span>Loading sections&hellip;</span>
+      </div>
+    );
   }
 
   const is61A = state.course === "CS 61A";
@@ -105,8 +116,7 @@ export default function App(): React.Node {
             <Link to="/tutoring" className="nav-link active">
               Tutoring
             </Link>
-            {state.currentUser?.isAdmin === true &&
-            (
+            {state.currentUser?.isAdmin === true && (
               <Link to="/admin" className="nav-link active">
                 Admin
               </Link>

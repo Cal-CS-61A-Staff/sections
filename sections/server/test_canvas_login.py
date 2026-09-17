@@ -31,10 +31,21 @@ class CanvasLoginTests(unittest.TestCase):
                      is_admin=False, course="test")
         known = User(email="known@test", name="Known", is_staff=False,
                      is_admin=False, course="test")
-        section = Section(course="test", name="Lab", location="Room")
+        section = Section(
+            course="test",
+            name="Lab",
+            location="Room",
+            description="",
+            capacity=30,
+            can_self_enroll=True,
+            start_time=0,
+            end_time=3600,
+        )
         db.session.add_all([staff, known, section])
         db.session.commit()
-        self.staff_id, self.section_id = staff.id, section.id
+        self.staff_id = staff.id
+        self.known_id = known.id
+        self.section_id = section.id
         for target in ("login.get_course", "state.get_course"):
             patcher = patch(target, return_value="test")
             patcher.start()
@@ -117,6 +128,65 @@ class CanvasLoginTests(unittest.TestCase):
         with self.client.session_transaction() as browser:
             self.assertNotIn("canvas_access_token", browser)
             self.assertNotIn("canvas_token_expires_at", browser)
+
+    def test_student_refresh_uses_summaries_and_keeps_enrolled_roster(self):
+        known = User.query.get(self.known_id)
+        section = Section.query.get(self.section_id)
+        peer = User(
+            email="peer@test",
+            name="Peer",
+            is_staff=False,
+            is_admin=False,
+            course="test",
+        )
+        unrelated = User(
+            email="unrelated@test",
+            name="Unrelated",
+            is_staff=False,
+            is_admin=False,
+            course="test",
+        )
+        other_section = Section(
+            course="test",
+            name="Discussion",
+            location="Other Room",
+            description="",
+            capacity=25,
+            can_self_enroll=True,
+            start_time=7200,
+            end_time=10800,
+        )
+        section.students.extend([known, peer])
+        other_section.students.append(unrelated)
+        db.session.add_all([peer, unrelated, other_section])
+        db.session.commit()
+
+        with self.client.session_transaction() as browser:
+            browser["_user_id"] = str(self.known_id)
+        with patch("state.format_coursecode", return_value="Test"):
+            response = self.client.post("/api/refresh_state", json={})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.get_json()
+        self.assertTrue(result["success"])
+        state = result["data"]
+        summaries = {item["id"]: item for item in state["sections"]}
+
+        enrolled_summary = summaries[str(self.section_id)]
+        other_summary = summaries[str(other_section.id)]
+        self.assertEqual(enrolled_summary["enrollmentCount"], 2)
+        self.assertEqual(len(enrolled_summary["students"]), 2)
+        self.assertEqual(enrolled_summary["students"], [None, None])
+        self.assertEqual(other_summary["enrollmentCount"], 1)
+        self.assertEqual(other_summary["students"], [None])
+
+        self.assertEqual(len(state["enrolledSections"]), 1)
+        roster = state["enrolledSections"][0]["students"]
+        self.assertEqual(
+            {student["email"] for student in roster},
+            {"known@test", "peer@test"},
+        )
+        self.assertNotIn("unrelated@test", response.get_data(as_text=True))
 
 
 if __name__ == "__main__":

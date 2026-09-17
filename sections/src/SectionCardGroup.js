@@ -5,7 +5,7 @@ import { useState } from "react";
 import * as React from "react";
 import Card from "react-bootstrap/Card";
 import styled from "styled-components";
-import { sectionInterval } from "./models";
+import { getEnrollmentCount, sectionInterval } from "./models";
 import type { Section } from "./models";
 import StudentSectionCard from "./StudentSectionCard";
 
@@ -45,7 +45,7 @@ export default function SectionCardGroup({
 
   const numHiddenOpenSections = sections
     .slice(cardsPerRow)
-    .filter((section) => section.capacity > section.students.length).length;
+    .filter((section) => section.capacity > getEnrollmentCount(section)).length;
 
   const columns = Array(cardsPerRow)
     .fill()

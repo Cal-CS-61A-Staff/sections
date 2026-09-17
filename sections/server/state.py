@@ -15,7 +15,8 @@ from import_sheet import parse_time_string
 import flask
 from flask import abort, jsonify, render_template, request, current_app, session
 from flask_login import current_user, login_required, login_user
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload, noload
 
 from common.course_config import format_coursecode, get_course, is_admin
 from common.rpc.auth import post_slack_message, validate_secret
@@ -33,6 +34,7 @@ from models import (
     Session,
     User,
     db,
+    user_section,
 )
 
 FIRST_WEEK_START = datetime(year=2022, month=6, day=27).timestamp()
@@ -64,18 +66,19 @@ def admin_required(func):
     return wrapped
 
 
-def section_sorter(section: Section) -> int:
+def section_sorter(
+    section: Section, enrollment_count: int, current_section_ids
+) -> int:
     score = 0
     big = 10000
-    if current_user.is_staff and section.staff is None:
+    if current_user.is_staff and section.staff_id is None:
         score -= big * 100
     if (
-        section.staff is not None
-        and section.staff.id == current_user.id
-        or current_user.id in [student.id for student in section.students]
+        section.staff_id == current_user.id
+        or section.id in current_section_ids
     ):
         score -= big * 10
-    spare_capacity = max(0, section.capacity - len(section.students))
+    spare_capacity = max(0, section.capacity - enrollment_count)
     if spare_capacity:
         score -= big * spare_capacity
     score += section.id
@@ -167,6 +170,7 @@ def create_state_client(app: flask.Flask):
         Backend API functions calling refresh_state should be called
         using the useAPI hook in frontend.
         """
+        refresh_started_at = time.perf_counter()
         config = CourseConfig.query.filter_by(course=get_course()).one_or_none()
         if config is None:
             config = CourseConfig(course=get_course())
@@ -184,23 +188,68 @@ def create_state_client(app: flask.Flask):
         }
 
         if current_user.is_authenticated:
+            course = get_course()
+            enrolled_sections = list(current_user.sections)
+            taught_sections = list(current_user.sections_taught)
+            current_section_ids = {section.id for section in enrolled_sections}
+
+            counts_started_at = time.perf_counter()
+            enrollment_counts = dict(
+                db.session.query(
+                    user_section.c.section_id,
+                    func.count(user_section.c.user_id),
+                )
+                .join(Section, Section.id == user_section.c.section_id)
+                .filter(Section.course == course)
+                .group_by(user_section.c.section_id)
+                .all()
+            )
+            counts_ms = (time.perf_counter() - counts_started_at) * 1000
+
+            def sort_key(section):
+                return section_sorter(
+                    section,
+                    enrollment_counts.get(section.id, 0),
+                    current_section_ids,
+                )
+
             out["enrolledSections"] = [
-                section.json
-                for section in sorted(current_user.sections, key=section_sorter)
+                section.to_json(reveal_roster=True)
+                for section in sorted(enrolled_sections, key=sort_key)
             ]
             out["taughtSections"] = [
-                section.json
-                for section in sorted(current_user.sections_taught, key=section_sorter)
+                section.to_json(reveal_roster=True)
+                for section in sorted(taught_sections, key=sort_key)
             ]
+            sections_started_at = time.perf_counter()
+            all_sections = (
+                Section.query.options(noload(Section.students))
+                .filter_by(course=course)
+                .all()
+            )
+            sections_query_ms = (time.perf_counter() - sections_started_at) * 1000
             out["sections"] = [
-                section.json
+                section.to_json(
+                    include_students=False,
+                    enrollment_count=enrollment_counts.get(section.id, 0),
+                )
                 for section in sorted(
-                    Section.query.filter_by(course=get_course()).all(),
-                    key=section_sorter,
+                    all_sections,
+                    key=sort_key,
                 )
             ]
             # Keep attendance details without repeating full section rosters.
             out["currentUser"] = current_user.simple_json
+            current_app.logger.info(
+                "refresh_state role=%s sections=%d enrollments=%d "
+                "counts_ms=%.1f sections_query_ms=%.1f total_ms=%.1f",
+                "staff" if current_user.is_staff else "student",
+                len(all_sections),
+                sum(enrollment_counts.values()),
+                counts_ms,
+                sections_query_ms,
+                (time.perf_counter() - refresh_started_at) * 1000,
+            )
 
         return out
 
@@ -220,6 +269,7 @@ def create_state_client(app: flask.Flask):
                 "id": section_id,
                 "staff": None,
                 "students": [],
+                "enrollmentCount": 0,
                 "description": "",
                 "capacity": -1,
                 "canSelfEnroll": False,
