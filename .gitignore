@@ -3,3 +3,5 @@ venv/
 server/common
 src/common
 .env
+**/.DS_Store
+**/__pycache__
