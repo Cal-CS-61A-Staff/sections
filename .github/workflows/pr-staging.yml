@@ -6,8 +6,17 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+  # Lets google-github-actions/auth exchange GitHub's OIDC token for GCP credentials.
+  id-token: write
+  # Lets the deploy job comment the preview URL on the PR.
   issues: write
+  pull-requests: write
+
+env:
+  # Keyless auth via Workload Identity Federation; only this repository may
+  # impersonate the deployer service account.
+  WORKLOAD_IDENTITY_PROVIDER: projects/137456085712/locations/global/workloadIdentityPools/github/providers/berkeley-cdss
+  DEPLOYER_SERVICE_ACCOUNT: sections-gh-actions-deployer@staging-cdss-web-apps.iam.gserviceaccount.com
 
 # One deploy per PR at a time; a newer push supersedes an in-progress deploy.
 concurrency:
@@ -22,7 +31,8 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_STAGING_SA_KEY }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 
       - name: Delete Cloud Run Preview Service
         run: |
@@ -42,7 +52,8 @@ jobs:
       - id: auth
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GCP_STAGING_SA_KEY }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
@@ -54,7 +65,7 @@ jobs:
           service: preview-sections-pr-${{ github.event.number }}
           region: us-west1
           source: .
-          flags: '--allow-unauthenticated --service-account=sections-run@staging-cdss-web-apps.iam.gserviceaccount.com --add-cloudsql-instances=staging-cdss-web-apps:us-west1:staging-cdss-web-apps-2 --max-instances=3'
+          flags: '--allow-unauthenticated --service-account=sections-app@staging-cdss-web-apps.iam.gserviceaccount.com --max-instances=3'
           # Previews behave like the monorepo's PR deployments: course key "cs61a"
           # (data moved to the staging DB) backed by the bCourses test course 1521247.
           env_vars: |
@@ -64,10 +75,13 @@ jobs:
             COURSE_KEY=cs61a
             COURSE_NAME=Sections preview (PR ${{ github.event.number }})
             ADMIN_OVERRIDE_CANVAS_COURSE_ID=1549197
+            # Cloud SQL IAM database auth as the service's own account; no password.
+            CLOUD_SQL_INSTANCE=staging-cdss-web-apps:us-west1:staging-cdss-web-apps-2
+            DB_USER=sections-app@staging-cdss-web-apps.iam
+            DB_NAME=sections
           secrets: |
             CANVAS_CLIENT_ID=sections-canvas-client-id:latest
             CANVAS_CLIENT_SECRET=sections-canvas-client-secret:latest
-            DATABASE_URL=sections-database-url:latest
             SECRET_KEY=sections-secret-key:latest
 
       - name: Allow Unauthenticated Access (allUsers)

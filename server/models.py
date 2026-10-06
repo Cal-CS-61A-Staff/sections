@@ -153,7 +153,7 @@ class AttendanceStatus(Enum):
 class Attendance(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     course: str = db.Column(db.String(255), index=True)
-    status: AttendanceStatus = db.Column(db.Enum(AttendanceStatus))
+    status: AttendanceStatus = db.Column(db.Enum(AttendanceStatus, name="attendance_status"))
     session_id: int = db.Column(db.Integer, db.ForeignKey("session.id"), index=True)
     session: Session = db.relationship(
         lambda: Session,
