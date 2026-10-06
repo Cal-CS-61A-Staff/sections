@@ -1,17 +1,18 @@
 from datetime import datetime, timedelta
-from os import getenv
 from random import choice
 
 from zoneinfo import ZoneInfo
 
+from course import get_course
 from main import app
 from models import Section, User, db, user_section
 
 
 def seed():
-    if getenv("ENV") == "prod":
+    if app.config["APP_ENV"] != "development":
         return
     with app.app_context():
+        course = get_course()
         db.create_all()
         pst = ZoneInfo("US/Pacific")
         discussions, labs = [], []
@@ -20,7 +21,7 @@ def seed():
             t = datetime(year=2020, month=8, day=20, hour=i % 10, minute=0, second=0, tzinfo=pst)
 
             discussion_section = Section(
-                course="cs61a",
+                course=course,
                 description=f"This is the {section_count + i + 1}th demo section.",
                 can_self_enroll=True,
                 capacity=5,
@@ -31,7 +32,7 @@ def seed():
             )
 
             lab_section = Section(
-                course="cs61a",
+                course=course,
                 description=f"This is the {i + 1}th demo section.",
                 can_self_enroll=True,
                 capacity=5,
@@ -54,12 +55,14 @@ def seed():
             discussion = choice(discussions)
             lab = choice(labs)
             user = User(
-                course="cs61a",
+                course=course,
                 email=f"gobears{i}@berkeley.edu",
                 name=f"Oski {i}th of his name",
                 is_staff=False,
+                is_admin=False,
             )
             user.sections = [discussion, lab]
+            db.session.add(user)
             users.append(user)
 
         db.session.commit()

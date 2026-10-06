@@ -1,7 +1,7 @@
 // @flow strict
 
 import { useCallback, useContext } from "react";
-import post from "./common/post";
+import post from "./post";
 import MessageContext from "./MessageContext";
 
 export default function useAPI(method: string, callback: ?(any) => mixed) {

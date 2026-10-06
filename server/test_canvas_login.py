@@ -5,7 +5,7 @@ from unittest.mock import patch
 from canvasapi.exceptions import InvalidAccessToken
 from flask import Flask, session
 
-from login import create_login_client
+from login import complete_login, create_login_client
 from models import Section, User, db
 from state import create_state_client
 
@@ -16,14 +16,12 @@ class CanvasLoginTests(unittest.TestCase):
         self.app.config.update(
             SECRET_KEY="test", TESTING=True,
             SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
-            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            CANVAS_SERVER_URL="https://canvas.test/",
+            CANVAS_CLIENT_ID="id", CANVAS_CLIENT_SECRET="secret",
         )
         db.init_app(self.app)
         create_state_client(self.app)
-        with patch("login.create_oauth_client") as oauth:
-            create_login_client(self.app)
-        self.login_callback = oauth.call_args.kwargs["success_callback"]
-        self.assertFalse(oauth.call_args.kwargs["store_canvas_tokens_in_session"])
+        create_login_client(self.app)
         self.context = self.app.app_context()
         self.context.push()
         db.create_all()
@@ -87,13 +85,16 @@ class CanvasLoginTests(unittest.TestCase):
                 self.assertIn("sign in", result["message"])
                 lookup.assert_not_called()
                 db.session.remove()
-                self.assertEqual(Section.query.get(self.section_id).students, [])
+                self.assertEqual(db.session.get(Section, self.section_id).students, [])
 
     def test_fresh_token_is_passed_to_canvas(self):
         self.authorize()
         with patch("state.canvas_service.get_student_from_email", return_value="New") as lookup:
             self.assertTrue(self.add_students("new@test")["success"])
         lookup.assert_called_once_with("new@test", "access")
+        db.session.remove()
+        new = User.query.filter_by(email="new@test").one()
+        self.assertEqual([s.id for s in new.sections], [self.section_id])
 
     def test_revoked_token_requests_reauthentication(self):
         self.authorize()
@@ -107,15 +108,10 @@ class CanvasLoginTests(unittest.TestCase):
             with self.subTest(is_staff=is_staff), self.app.test_request_context():
                 session["canvas_access_token"] = "previous"
                 session["canvas_token_expires_at"] = 123
-                with patch("login.get_bcourses_id", return_value=1), \
-                     patch("login.canvas_service.get_email", return_value="staff@test"), \
-                     patch("login.canvas_service.get_name", return_value="Staff"), \
-                     patch("login.canvas_service.get_preferred_name", return_value="Staff"), \
-                     patch("login.canvas_service.get_user_courses", return_value=[]), \
-                     patch("login.canvas_service.get_course"), \
-                     patch("login.canvas_service.is_staff", return_value=is_staff), \
-                     patch("login.canvas_service.is_admin", return_value=False):
-                    self.login_callback({
+                with patch("login.canvas_service.get_profile",
+                           return_value={"primary_email": "staff@test", "short_name": "Staff"}), \
+                     patch("login.canvas_service.get_course_roles", return_value=(is_staff, False)):
+                    complete_login({
                         "user": {"id": 123}, "access_token": "access",
                         "refresh_token": "must-not-be-stored", "expires_in": 3600,
                     })
@@ -130,8 +126,8 @@ class CanvasLoginTests(unittest.TestCase):
             self.assertNotIn("canvas_token_expires_at", browser)
 
     def test_student_refresh_uses_summaries_and_keeps_enrolled_roster(self):
-        known = User.query.get(self.known_id)
-        section = Section.query.get(self.section_id)
+        known = db.session.get(User, self.known_id)
+        section = db.session.get(Section, self.section_id)
         peer = User(
             email="peer@test",
             name="Peer",

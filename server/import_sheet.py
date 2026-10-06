@@ -5,8 +5,8 @@ from typing import List, Iterator
 
 from zoneinfo import ZoneInfo
 
-from common.course_config import get_course
-from common.rpc.auth import read_spreadsheet
+from course import get_course
+from google_sheets import read_spreadsheet
 from dataclasses import asdict, dataclass, field, fields
 from models import Failure, Section, User, db, user_section
 
@@ -134,8 +134,7 @@ def import_sections_from_url(url: str):
     try:
         reader = read_spreadsheet(
             url=url,
-            sheet_name=f"Sections",
-            course="cs61a",
+            sheet_name="Sections",
         )
     except Exception:
         raise Failure(
@@ -191,6 +190,7 @@ def import_enrollment(data: Iterator):
                 student.sections.remove(s)
                 break
         student.sections.append(section)
+        db.session.add(student)
 
     db.session.commit()
 
@@ -199,8 +199,7 @@ def import_enrollment_from_url(url: str):
     try:
         reader = read_spreadsheet(
             url=url,
-            sheet_name=f"Enrollment",
-            course="cs61a",
+            sheet_name="Enrollment",
         )
     except Exception:
         raise Failure(

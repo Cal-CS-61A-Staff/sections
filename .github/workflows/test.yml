@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  server-tests:
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bootstrap
+        uses: ./.github/actions/bootstrap
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run tests with pytest
+        run: pytest server
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build
+        # react-scripts fails the build on lint warnings when CI=true; the
+        # existing warnings are reported but don't block, matching the Docker build.
+        run: CI=false yarn react-scripts build

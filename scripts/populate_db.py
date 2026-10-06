@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.append(os.path.abspath("server"))
 
-from common.rpc.auth import read_spreadsheet
+from google_sheets import read_spreadsheet
 
 
 from main import app
