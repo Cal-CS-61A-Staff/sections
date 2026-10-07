@@ -51,10 +51,14 @@ def _require(key: str) -> str:
 def load_config(app: flask.Flask):
     """Load app config from the environment (and a local .env file, if present).
 
-    FLASK_ENV is one of development, staging, production, matching seating.
+    FLASK_ENV is one of development, staging, production, matching seating. It
+    is required so a misconfigured deployment can't fall back to development
+    settings (SQLite, a fixed SECRET_KEY).
     """
     load_dotenv()
-    env = os.getenv("FLASK_ENV", "development").lower()
+    env = _require("FLASK_ENV").lower()
+    if env not in ("development", "staging", "production"):
+        raise RuntimeError(f"FLASK_ENV must be development, staging or production, not {env!r}")
     is_dev = env == "development"
 
     canvas_server_url = _require("CANVAS_SERVER_URL")
