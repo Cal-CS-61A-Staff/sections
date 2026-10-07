@@ -2,31 +2,25 @@
 
 
 ## Local Development Set Up
-## Please work on a branch! After you've cloned the repo, make sure you've switched to the branch!
 
-### Development with a Dev Container (Docker)
-1. See main [README](../../README.md#docker-setup) for setup instructions.
-2. Run command `bt sections_app`.
-3. Install all Python requirements by running `pip3 install -r requirements.txt` inside of the [server directory](sections/server).
-4. Now you can develop locally! Try it out with `yarn run dev` from `apps/sections`. Alternatively in seperate terminals, run the backend with `python3 main.py` from `apps/sections/server` and the frontend with `yarn start` from `apps/sections`.
+Requires Python 3.14 and Node 20 (`mise install` picks both up from `mise.toml`).
 
-### Development without a Dev Container (Docker)
-1. Create symlinks in `berkeley-cs61a/apps/sections/server` and `berkeley-cs61a/apps/sections/src` by running `ln -s ../../../common common` within those directories.
-2. Check your node version (bt is currently using v20.19.2), by running `node -v`.
-4. Install yarn by running `npm install --global yarn`.
-5. Download node requirements from [`package.json`](sections/package.json) with `yarn install`.
-6. Create a new Python environment: `python3 -m venv venv`. If you name your virtual environment differently, make sure to update the [gitignore](sections/.gitignore).
-7. Activate the new Python environment with `source venv/bin/activate`.
-8. Install all Python requirements by running `pip3 install -r requirements.txt` inside of the [server directory](sections/server).
-9. Now you can develop locally! Try it out with `yarn run dev` from `apps/sections`. Alternatively in seperate terminals, run the backend with `python3 main.py` from `apps/sections/server` and the frontend with `yarn start` from `apps/sections`.
+1. Copy `.env.example` to `.env` and fill in the Canvas sandbox `CANVAS_CLIENT_ID` and `CANVAS_CLIENT_SECRET` (ask a maintainer). Never commit `.env`.
+2. Create a virtual environment and install the server dependencies:
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r server/requirements.txt
+   ```
+3. Install the frontend dependencies with `yarn install`.
+4. Run both with `yarn run dev`, or separately: the backend with `python3 main.py` from `server/` (port 8000) and the frontend with `yarn start` (port 3000, proxies API calls to 8000).
+5. Run the backend tests from the repository root with `python -m unittest discover -s server -p "test_*.py"`.
 
 ## Authentication
 
-If this is your first time developing the sections tool, you will need to ask for the environment variables not in this git repo-- CANVAS_SERVER_URL, CANVAS_CLIENT_ID, CANVAS_CLIENT_SECRET. These are used by OAuth to authenticate you into the Canvas sandbox so you can develop. Place these into an `.env` file, with ENV=DEV on the first line. Make sure to add the `.env` file to your `.gitignore`. If the below steps do not work, you will also need to ask to be added as an Admin to the canvas sandbox. Then, follow the instructions below.
+Users sign in through Canvas OAuth (`/oauth/canvas_login`). Their role comes from their enrollment in the course named by `CANVAS_COURSE_ID`: Teachers and TAs are staff, and Teachers and Lead TAs are admins.
 
-To authenticate locally, click `Sign in`. You will be directed to something like `localhost:3000/oauth/canvas_login`. Change the link to use port 8000:
-`localhost:8000/oauth/canvas_login`. Follow the link to authenticate with canvas. Now you can log in as normal. Once you get a redirect notice,
-access `localhost:3000`. A jinja2 template not found exception is expected when you're accessing the server (port 8000) after authentication has completed.
+To sign in locally, click `Sign in`. You will be sent to `localhost:3000/oauth/canvas_login`; change the port to 8000 (`localhost:8000/oauth/canvas_login`) and finish signing in with Canvas, then go back to `localhost:3000`. A "template not found" error on port 8000 after signing in is expected, because the built frontend isn't served in development.
 
 ### About the Sandbox
 
@@ -36,7 +30,7 @@ The production Sections app is deployed on GCP Cloud Run and interacts with bCou
 
 ### More About Accessing Canvas APIs
 
-Our wrapper to access Canvas APIs can be found at `common/canvas_service/__init__.py`. The methods that our currently provisioned API key gives us permission to access can be found in [common/oauth_client.py](https://github.com/Cal-CS-61A-Staff/berkeley-cs61a/blob/e448458532f9dea5cc9b2077bde018beb1c90797/common/oauth_client.py#L174-L180).
+Our wrapper for the Canvas API is `server/canvas_service.py`, which also lists the scopes the app requests at login. Those scopes must match the scopes on the app's Canvas developer key.
 
 bCourses API keys have strict scope and permissions. bCourses API keys should only be used for the exact purpose they were granted for. Specifically, the sections app API key should not be used by another app or for any purpose outside the approved scope for the sections app. If you need a new API key with broader scope or for a different app, please contact @pancakereport to discuss. The process for obtaining a new API key requires faculty or full time staff (like @pancakereport) support and working with RTL who manage bCourses.
 
@@ -59,19 +53,19 @@ python3 import_locally.py --type enrollment --file test_csvs/lab_enrollment.csv
 3. In the `server` directory, delete `app.db` and run `sqlite3 app.db < gcp-sections-export.sql`.
 
 ## API
-Functions marked with the `@api` decorator are exposed as public methods. To call them, you must be an admin on auth for the course you're querying about. To create a secret, find the appropriate course on auth and create a new client under "Create new client and obtain secret key." Please follow best practices for storing the secret because if it is leaked, student information can be exposed. Then, curl away. Example request:
+Functions marked with the `@api` decorator are also exposed at `/api/sudo/<name>`, which runs the function as the user with the given email. These endpoints are disabled unless the `API_SECRET` environment variable is set, and every request must include that secret. Anyone with the secret can act as any user, so store it in Secret Manager and never commit it. Example request:
 
 ```
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
         "secret": "",
-        "email": "", # your email, must be admin on auth
+        "email": "", # the user to act as
         "args": {
             "email": "<student>@berkeley.edu"
         }
       }' \
-  "https://sections.cs61a.org/api/sudo/get_student_discussion_attendance"
+  "https://<sections-host>/api/sudo/get_student_discussion_attendance"
 ```
 
 ## Notes

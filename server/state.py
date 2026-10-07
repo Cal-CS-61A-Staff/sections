@@ -1,4 +1,5 @@
 import csv
+import hmac
 import re
 import time
 from canvasapi.exceptions import InvalidAccessToken, Unauthorized
@@ -8,7 +9,6 @@ from datetime import datetime
 from functools import wraps
 from json import dumps
 from typing import List, Optional, Union
-from unittest import result
 from zoneinfo import ZoneInfo
 from import_sheet import parse_time_string
 
@@ -18,12 +18,10 @@ from flask_login import current_user, login_required, login_user
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, noload
 
-from common.course_config import format_coursecode, get_course, is_admin
-from common.rpc.auth import post_slack_message, validate_secret
-from common.rpc.secrets import only
-from common.rpc.sections import rpc_export_attendance
+import canvas_service
+from course import format_coursecode, get_course
 from import_sheet import import_sections_from_url, import_enrollment_from_url
-import common.canvas_service as canvas_service
+from slack import post_slack_message
 
 from models import (
     Attendance,
@@ -92,6 +90,11 @@ def parse_emails(emails):
 def get_config() -> CourseConfig:
     return CourseConfig.query.filter_by(course=get_course()).one()
 
+def is_valid_api_secret(secret) -> bool:
+    expected = current_app.config.get("API_SECRET")
+    return bool(expected) and isinstance(secret, str) and hmac.compare_digest(secret, expected)
+
+
 def add_student_helper(student: User, target_section: Section):
     if len(set([s.name for s in student.sections])) != len(student.sections):
         raise Failure("Student has multiple sections of the same type")
@@ -102,6 +105,8 @@ def add_student_helper(student: User, target_section: Section):
             student.sections.remove(s)
             break
     student.sections.append(target_section)
+    # SQLAlchemy 2.0 no longer cascades new objects into the session through backrefs.
+    db.session.add(student)
 
 def create_state_client(app: flask.Flask):
     def api(handler):
@@ -125,12 +130,10 @@ def create_state_client(app: flask.Flask):
             email = data["email"]
             args = data["args"]
 
-            course = data.get("course", None)
-            course = validate_secret(secret=secret, course=course)
-            if course != get_course():
+            if not is_valid_api_secret(secret):
                 abort(401)
 
-            user = User.query.filter_by(course=course, email=email).one()
+            user = User.query.filter_by(course=get_course(), email=email).one()
             login_user(user)
             try:
                 return jsonify({"success": True, "data": handler(**args)})
@@ -560,7 +563,7 @@ def create_state_client(app: flask.Flask):
         section = Section.query.filter_by(id=section_id, course=get_course()).one()
         student = User.query.filter_by(email=email, course=get_course()).one_or_none()
         if student is None:
-            student = User(email=email, name=email, is_staff=False, course=get_course())
+            student = User(email=email, name=email, is_staff=False, is_admin=False, course=get_course())
 
         # for decoupling
         add_student_helper(student, section)
@@ -628,16 +631,11 @@ def create_state_client(app: flask.Flask):
     def export_attendance():
         return export_helper()
 
-    @rpc_export_attendance.bind(app)
-    @only("grade-display", allow_staging=True)
-    def export_attendance_rpc():
-        login_user(User.query.filter_by(course = get_course(), is_staff=True).first())
-        return export_helper()
-
     @api
     def export_attendance_secret(secret: str):
-        if validate_secret(secret=secret) == get_course():
+        if is_valid_api_secret(secret):
             return export_helper()
+        raise Failure("Invalid secret")
 
     def export_helper():
         stringify = dumps
@@ -759,11 +757,11 @@ def create_state_client(app: flask.Flask):
 
         message = (
             "The following tutors have not yet set up their Zoom links for all their sections:\n"
-            + "\n".join(f" • <!{email}>" for email in tutor_emails)
+            + "\n".join(f" • {email}" for email in tutor_emails)
             + "\n Please do so ASAP! Thanks."
         )
 
-        post_slack_message(course=get_course(), message=message, purpose="tutors")
+        post_slack_message(message)
 
         return refresh_state()
 

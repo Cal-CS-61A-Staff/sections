@@ -1,7 +1,10 @@
 server/gcp-sections-export.sql
 venv/
-server/common
-src/common
+server/app.db
+server/static/
+node_modules/
+build/
+deploy/
 .env
 **/.DS_Store
 **/__pycache__

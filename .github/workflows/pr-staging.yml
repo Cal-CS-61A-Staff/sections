@@ -1,0 +1,116 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+  # Lets google-github-actions/auth exchange GitHub's OIDC token for GCP credentials.
+  id-token: write
+  # Lets the deploy job comment the preview URL on the PR.
+  issues: write
+  pull-requests: write
+
+env:
+  # Keyless auth via Workload Identity Federation; only this repository may
+  # impersonate the deployer service account.
+  WORKLOAD_IDENTITY_PROVIDER: projects/137456085712/locations/global/workloadIdentityPools/github/providers/berkeley-cdss
+  DEPLOYER_SERVICE_ACCOUNT: sections-gh-actions-deployer@staging-cdss-web-apps.iam.gserviceaccount.com
+
+# One deploy per PR at a time; a newer push supersedes an in-progress deploy.
+concurrency:
+  group: preview-sections-pr-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup-preview-service:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Delete Cloud Run Preview Service
+        run: |
+          gcloud run services delete preview-sections-pr-${{ github.event.number }} \
+            --region=us-west1 \
+            --quiet || true
+
+  deploy-preview-service:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy to Cloud Run (Preview)
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: preview-sections-pr-${{ github.event.number }}
+          region: us-west1
+          source: .
+          flags: '--allow-unauthenticated --service-account=sections-app@staging-cdss-web-apps.iam.gserviceaccount.com --max-instances=3'
+          # Previews behave like the monorepo's PR deployments: course key "cs61a"
+          # (data moved to the staging DB) backed by the bCourses test course 1521247.
+          env_vars: |
+            FLASK_ENV=staging
+            CANVAS_SERVER_URL=https://bcourses.berkeley.edu/
+            CANVAS_COURSE_ID=1521247
+            COURSE_KEY=cs61a
+            COURSE_NAME=Sections preview (PR ${{ github.event.number }})
+            ADMIN_OVERRIDE_CANVAS_COURSE_ID=1549197
+            # Cloud SQL IAM database auth as the service's own account; no password.
+            CLOUD_SQL_INSTANCE=staging-cdss-web-apps:us-west1:staging-cdss-web-apps-2
+            DB_USER=sections-app@staging-cdss-web-apps.iam
+            DB_NAME=sections
+          secrets: |
+            CANVAS_CLIENT_ID=sections-canvas-client-id:latest
+            CANVAS_CLIENT_SECRET=sections-canvas-client-secret:latest
+            SECRET_KEY=sections-secret-key:latest
+
+      - name: Allow Unauthenticated Access (allUsers)
+        run: |
+          gcloud run services add-iam-policy-binding preview-sections-pr-${{ github.event.number }} \
+            --region=us-west1 \
+            --member="allUsers" \
+            --role="roles/run.invoker"
+
+      - name: Comment PR with Preview URL
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: https://preview-sections-pr-${{ github.event.number }}-137456085712.us-west1.run.app
+        with:
+          script: |
+            // The preview URL is stable for the life of the PR, so only comment once.
+            const marker = '<!-- sections-pr-preview -->';
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            if (comments.some(c => c.body?.includes(marker))) {
+              core.info('Preview URL already commented; skipping.');
+              return;
+            }
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${marker}\n🚀 **Staging Preview Deployed!**\n\nURL: ${process.env.PREVIEW_URL}`
+            });

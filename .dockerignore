@@ -1,0 +1,31 @@
+# VCS and CI
+.git
+.gitignore
+.github
+
+# Dependencies and build output (rebuilt inside the image)
+node_modules/
+build/
+deploy/
+server/static/
+
+# Local Python environments and caches
+venv/
+.venv
+__pycache__/
+*.py[cod]
+
+# Secrets and local config - never bake these into an image
+.env*
+*credentials*.json
+
+# Local databases and exports
+*.db
+*.sql
+
+# Tests and dev-only files
+server/test_*.py
+server/test_csvs/
+scripts/
+README.md
+**/.DS_Store

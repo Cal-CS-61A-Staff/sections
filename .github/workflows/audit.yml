@@ -1,0 +1,44 @@
+name: Audit
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  check-broken-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bootstrap
+        uses: ./.github/actions/bootstrap
+      - name: Audit with pip
+        # returns 1 if there are broken dependencies, 0 otherwise
+        # so, CI will fail if there are broken dependencies
+        run: |
+          pip check
+  check-package-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bootstrap
+        uses: ./.github/actions/bootstrap
+      - name: Audit with pip
+        # only informational, does not fail CI
+        run: |
+          pip list --outdated
+  audit-with-pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bootstrap
+        uses: ./.github/actions/bootstrap
+        # returns 1 if there are vulnerabilities, 0 otherwise
+        # we use `|| true` to make sure CI does not fail whatsoever
+      - name: Audit with pip-audit
+        run: |
+          pip-audit || true

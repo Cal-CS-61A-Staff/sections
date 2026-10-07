@@ -3,21 +3,17 @@ from random import randrange
 from typing import List
 from urllib.parse import quote
 
-import flask
 from flask_login import UserMixin, current_user
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import joinedload
-
-from common.course_config import get_course_id
-from common.db import database_url
+from sqlalchemy.orm import DeclarativeBase, joinedload
 
 
-def create_models(app: flask.Flask):
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+class Base(DeclarativeBase):
+    # The models use plain type hints rather than SQLAlchemy 2.0's Mapped[] annotations.
+    __allow_unmapped__ = True
 
 
-db = SQLAlchemy()
+db = SQLAlchemy(model_class=Base)
 
 # Association Table for User - Section Pairs because each user can have multiple sections
 user_section = db.Table('user_section',
@@ -50,7 +46,7 @@ class Section(db.Model):
     end_time: int = db.Column(db.Integer)
     location: str = db.Column(db.String(255), nullable=False)
     call_link: str = db.Column(db.String(255), nullable=True)
-    sessions: List["Session"]
+    # sessions: List[Session] is a backref defined on Session
 
     @property
     def tags(self):
@@ -128,7 +124,7 @@ class Session(db.Model):
     start_time: int = db.Column(db.Integer)
     section_id: int = db.Column(db.Integer, db.ForeignKey("section.id"), index=True)
     section: Section = db.relationship(lambda: Section, backref=db.backref("sessions"), lazy="joined")
-    attendances: List["Attendance"]
+    # attendances: List[Attendance] is a backref defined on Attendance
 
     @property
     def json(self):
@@ -157,7 +153,7 @@ class AttendanceStatus(Enum):
 class Attendance(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     course: str = db.Column(db.String(255), index=True)
-    status: AttendanceStatus = db.Column(db.Enum(AttendanceStatus))
+    status: AttendanceStatus = db.Column(db.Enum(AttendanceStatus, name="attendance_status"))
     session_id: int = db.Column(db.Integer, db.ForeignKey("session.id"), index=True)
     session: Session = db.relationship(
         lambda: Session,
@@ -200,7 +196,7 @@ class User(db.Model, UserMixin):
     sections: List["Section"] = db.relationship(
         'Section', secondary=user_section, back_populates='students', lazy='joined'
     )
-    attendances: List["Attendance"]
+    # attendances: List[Attendance] is a backref defined on Attendance
 
     @property
     def identity_json(self):
